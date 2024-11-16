@@ -1,24 +1,19 @@
-// src/main.cpp
 #include <iostream>
-#include <fstream> 
-#include <boost/filesystem.hpp>
-#include "test.h"
+#include "Interpreter.h"
 
 int main() {
-    Test test;
-    test.sayHello();
+    Interpreter interpreter;
 
-    boost::filesystem::path filePath("example.txt");
+    std::string command;
+    while (true) {
+        std::cout << "> ";
+        std::getline(std::cin, command);
 
-    if (!boost::filesystem::exists(filePath)) {
-        std::ofstream file(filePath.string());
-        if (file) {
-            std::cout << "File created: " << filePath << std::endl;
-        } else {
-            std::cerr << "Failed to create file: " << filePath << std::endl;
+        if (command == "exit") {
+            break;
         }
-    } else {
-        std::cout << "File already exists: " << filePath << std::endl;
+
+        interpreter.processCommand(command);
     }
 
     return 0;
