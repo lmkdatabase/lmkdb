@@ -1,20 +1,20 @@
-#include <iostream>
 #include "Interpreter.h"
+#include <iostream>
+
+using namespace std;
 
 int main() {
-    Interpreter interpreter;
+	Interpreter interpreter;
 
-    std::string command;
-    while (true) {
-        std::cout << "> ";
-        std::getline(std::cin, command);
+	std::string command;
+	while (true) {
+		cout << "> ";
+		getline(cin, command);
 
-        if (command == "exit") {
-            break;
-        }
+		if (command == "exit") { break; }
 
-        interpreter.processCommand(command);
-    }
+		interpreter.processCommand(command);
+	}
 
-    return 0;
+	return 0;
 }
