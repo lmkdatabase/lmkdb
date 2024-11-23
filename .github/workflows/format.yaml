@@ -1,0 +1,28 @@
+name: format
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.cpp'
+      - '**/*.h'
+  pull_request:
+    paths:
+      - '**/*.cpp'
+      - '**/*.h'
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout 
+        uses: actions/checkout@v3
+
+      - name: install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: format
+        run: |
+          find src -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror
