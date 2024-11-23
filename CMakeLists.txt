@@ -16,23 +16,32 @@ set(INCLUDE_PATHS include)
 include_directories(${INCLUDE_PATHS})
 
 # Source and header files
-set(SOURCE_FILES
-    src/main.cpp
-    src/Test.cpp
-)
-set(HEADER_FILES
-    include/Test.h
-)
+file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
+file(GLOB_RECURSE HEADER_FILES include/*.h)
 
-# Set Boost root directory to the Homebrew path
-set(BOOST_ROOT "/opt/homebrew/opt/boost")
+# Enable necessary policies
+cmake_policy(SET CMP0144 NEW) # Find package uses upper-case <PACKAGENAME>_ROOT
+cmake_policy(SET CMP0167 NEW) # Use modern Boost CMake package
+
+# Find and link Boost
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
-# Main project executable
+# Ensure Boost is found
+if(Boost_FOUND)
+    message(STATUS "Boost found: ${Boost_INCLUDE_DIRS}")
+    include_directories(${Boost_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "Boost not found!")
+endif()
+
+# Add executable
 add_executable(lmkdb ${SOURCE_FILES})
 
-# Link Boost Filesystem
+# Link Boost libraries
 target_link_libraries(lmkdb PUBLIC Boost::filesystem)
 
-# Include directories for main executable
-target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS})
+# Include directories for the target
+target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS})
+
+# Add stricter warning options (optional)
+target_compile_options(lmkdb PRIVATE -Wall -Wextra -Wpedantic)
