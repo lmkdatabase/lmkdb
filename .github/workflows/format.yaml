@@ -4,13 +4,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - '**/*.cpp'
-      - '**/*.h'
   pull_request:
-    paths:
-      - '**/*.cpp'
-      - '**/*.h'
+    branches:
+      - main
 
 jobs:
   format-check:
