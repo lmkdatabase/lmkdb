@@ -4,7 +4,9 @@ set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 
 project(lmkdb)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set paths for external libraries
@@ -14,7 +16,7 @@ set(INCLUDE_PATHS include)
 include_directories(${INCLUDE_PATHS})
 
 # Source and header files
-set(SOURCE_FILES 
+set(SOURCE_FILES
     src/main.cpp
     src/Test.cpp
 )
@@ -23,7 +25,7 @@ set(HEADER_FILES
 )
 
 # Set Boost root directory to the Homebrew path
-set(BOOST_ROOT "/opt/homebrew/opt/boost") 
+set(BOOST_ROOT "/opt/homebrew/opt/boost")
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 # Main project executable
