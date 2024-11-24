@@ -10,7 +10,7 @@ public:
     DatabaseAPI();
     ~DatabaseAPI();
 
-    void createTable(const std::string& tableName);
+    void createTable(const std::string& tableName, const std::vector<std::string> &attributes);
     void deleteTable(const std::string& tableName);
     void insertIntoTable(const std::string& tableName, const std::vector<std::string>& record);
     void readTable(const std::string& tableName);

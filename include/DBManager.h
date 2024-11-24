@@ -3,16 +3,17 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class DBManager {
 public:
     DBManager(const std::string& db_path);
     ~DBManager();
 
-    bool createTable(const std::string& table_name);
+    bool createTable(const std::string& table_name, const std::vector<std::string> &attributes);
     bool deleteTable(const std::string& table_name);
 
-    bool insertRecord(const std::string& table_name, const std::vector<std::string>& record);
+    bool insertRecord(const std::string& table_name, const std::unordered_map<std::string, std::string> &attrMap);
     std::vector<std::vector<std::string>> readAllRecords(const std::string& table_name);
     bool updateRecord(const std::string& table_name, int record_id, const std::vector<std::string>& updated_record);
     bool deleteRecord(const std::string& table_name, int record_id);
@@ -20,7 +21,8 @@ public:
 private:
     std::string database_path;
 
-    std::string getTableFilePath(const std::string& table_name) const;
+    std::string getFilePath(const std::string& file_name) const;
+    std::unordered_map<std::string, int> getTableAttributesMap(const std::string &table_name);
 };
 
 #endif

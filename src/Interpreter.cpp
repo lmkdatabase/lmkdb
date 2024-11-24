@@ -23,37 +23,41 @@ void Interpreter::processCommand(const string &command) {
 		return;
 	}
 
+    if (tokens.size() < 2) {
+		cout << "" << endl;
+		return;
+	}
+
 	boost::algorithm::to_lower(tokens[0]);
 
-	try {
-		if (tokens[0] == "create" && tokens.size() == 3 &&
-		    tokens[1] == "table") {
-			dbApi->createTable(tokens[2]);
-		} else if (tokens[0] == "delete" && tokens.size() == 3 &&
-		           tokens[1] == "table") {
-			dbApi->deleteTable(tokens[2]);
-		} else if (tokens[0] == "insert" && tokens.size() >= 3) {
-			string tableName = tokens[1];
-			vector<string> record(tokens.begin() + 2, tokens.end());
-			dbApi->insertIntoTable(tableName, record);
-		} else if (tokens[0] == "read" && tokens.size() == 3 &&
-		           tokens[1] == "table") {
-			dbApi->readTable(tokens[2]);
-		} else if (tokens[0] == "update" && tokens.size() >= 4) {
-			string tableName = tokens[1];
-			int recordId = stoi(tokens[2]);
-			vector<string> updatedRecord(tokens.begin() + 3, tokens.end());
-			dbApi->updateTable(tableName, recordId, updatedRecord);
-		} else if (tokens[0] == "remove" && tokens.size() == 3) {
-			const string &tableName = tokens[1];
-			int recordId = stoi(tokens[2]);
-			dbApi->removeFromTable(tableName, recordId);
-		} else {
-			cout << "Unknown command or invalid syntax." << endl;
-		}
-	} catch (const invalid_argument &e) {
-		cout << "Invalid argument: " << e.what() << endl;
-	} catch (const out_of_range &e) {
-		cout << "Value out of range: " << e.what() << endl;
-	}
+	string operation = tokens[0];
+    string tableName = tokens[1];
+
+    if (operation == "create" && tokens.size() >= 3) {
+        string tableName = tokens[1];
+        vector<string> attributes(tokens.begin() + 2, tokens.end());
+        dbApi->createTable(tableName, attributes);
+        
+    } else if (operation == "insert" && tokens.size() >= 3) {
+        string tableName = tokens[1];
+        vector<string> values(tokens.begin() + 2, tokens.end());
+        dbApi->insertIntoTable(tableName, values);
+
+    } else if (operation == "delete" && tokens.size() >= 2) {
+        string tableName = tokens[1];
+        dbApi->deleteTable(tokens[2]);
+    }  else if (operation == "read" && tokens.size() == 3) {
+        dbApi->readTable(tokens[2]);
+    } else if (operation == "update" && tokens.size() >= 4) {
+        string tableName = tokens[1];
+        int recordId = stoi(tokens[2]);
+        vector<string> updatedRecord(tokens.begin() + 3, tokens.end());
+        dbApi->updateTable(tableName, recordId, updatedRecord);
+    } else if (operation == "remove" && tokens.size() == 3) {
+        const string &tableName = tokens[1];
+        int recordId = stoi(tokens[2]);
+        dbApi->removeFromTable(tableName, recordId);
+    } else {
+        cout << "Unknown command or invalid syntax." << endl;
+    }
 }
