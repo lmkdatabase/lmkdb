@@ -11,6 +11,17 @@ Interpreter::Interpreter() : dbApi(new DatabaseAPI()) {}
 
 Interpreter::~Interpreter() { delete dbApi; }
 
+bool Interpreter::validateInteger(const string &input) {
+    try {
+        stoi(input);
+        return true;
+    } catch (const std::invalid_argument&) {
+        return false;
+    } catch (const std::out_of_range&) {
+        return false;
+    }
+}
+
 void Interpreter::processCommand(const string &command) {
 	vector<string> tokens;
 	istringstream stream(command);
@@ -40,23 +51,33 @@ void Interpreter::processCommand(const string &command) {
         
     } else if (operation == "insert" && tokens.size() >= 3) {
         string tableName = tokens[1];
-        vector<string> values(tokens.begin() + 2, tokens.end());
-        dbApi->insertIntoTable(tableName, values);
+        vector<string> newRecord(tokens.begin() + 2, tokens.end());
+        dbApi->insertIntoTable(tableName, newRecord);
+
+    } else if (operation == "update" && tokens.size() >= 4) {
+        string tableName = tokens[1];
+
+        if (!validateInteger(tokens[2])) {
+            cout << "Please provide a valid id as the third argument." << endl;
+            return;
+        }
+
+        int recordId = stoi(tokens[2]);
+        vector<string> updatedRecord(tokens.begin() + 3, tokens.end());
+        dbApi->updateTable(tableName, recordId, updatedRecord);
 
     } else if (operation == "delete" && tokens.size() >= 2) {
         string tableName = tokens[1];
         dbApi->deleteTable(tokens[2]);
+
     }  else if (operation == "read" && tokens.size() == 3) {
         dbApi->readTable(tokens[2]);
-    } else if (operation == "update" && tokens.size() >= 4) {
-        string tableName = tokens[1];
-        int recordId = stoi(tokens[2]);
-        vector<string> updatedRecord(tokens.begin() + 3, tokens.end());
-        dbApi->updateTable(tableName, recordId, updatedRecord);
+
     } else if (operation == "remove" && tokens.size() == 3) {
         const string &tableName = tokens[1];
         int recordId = stoi(tokens[2]);
         dbApi->removeFromTable(tableName, recordId);
+
     } else {
         cout << "Unknown command or invalid syntax." << endl;
     }

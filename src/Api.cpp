@@ -73,7 +73,23 @@ void DatabaseAPI::readTable(const string &tableName) {
 
 void DatabaseAPI::updateTable(const string &tableName, int recordId,
                               const vector<string> &updatedRecord) {
-	if (dbManager->updateRecord(tableName, recordId, updatedRecord)) {
+	unordered_map<string, string> mp;
+
+    for (const auto& token : updatedRecord) {
+		size_t pos = token.find(':');
+
+		if (pos != string::npos) {
+			string key = token.substr(0, pos);
+			string value = token.substr(pos + 1);
+
+			mp[key] = value;
+		} else {
+			cerr << "Invalid token: " << token << endl;
+			return;
+		}
+    }
+
+	if (dbManager->updateRecord(tableName, recordId, mp)) {
 		cout << "Record updated in table: " << tableName << endl;
 	} else {
 		cout << "Failed to update record in table: " << tableName << endl;

@@ -173,37 +173,54 @@ vector<vector<string>> DBManager::readAllRecords(const string &table_name) {
 }
 
 bool DBManager::updateRecord(const string &table_name, int record_id,
-                             const vector<string> &updated_record) {
-	string table_file = getFilePath(table_name);
-	if (!fs::exists(table_file)) {
-		cerr << "Table does not exist: " << table_name << endl;
-		return false;
-	}
+                             const unordered_map<string, string> &attrMap) {
+    string table_file = getFilePath(table_name);
+    if (!fs::exists(table_file)) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return false;
+    }
 
-	vector<vector<string>> records = readAllRecords(table_name);
-	if (record_id < 0 || record_id >= (int)records.size()) {
-		cerr << "Record ID out of bounds: " << record_id << endl;
-		return false;
-	}
+    vector<vector<string>> records = readAllRecords(table_name);
+    if (record_id < 0 || record_id >= (int)records.size()) {
+        cerr << "Record ID out of bounds: " << record_id << endl;
+        return false;
+    }
 
-	records[record_id] = updated_record;
+    unordered_map<string, int> tableAttrMap = getTableAttributesMap(table_name);
+    if (tableAttrMap.empty()) {
+        cerr << "Failed to retrieve attribute mapping for table: " << table_name << endl;
+        return false;
+    }
 
-	ofstream file(table_file, ios::trunc);
-	if (!file.is_open()) {
-		cerr << "Failed to update record in table: " << table_name << endl;
-		return false;
-	}
+    vector<string> updatedRecord = records[record_id];
 
-	for (const auto &record : records) {
-		for (size_t i = 0; i < record.size(); ++i) {
-			file << record[i];
-			if (i < record.size() - 1) file << ",";
-		}
-		file << "\n";
-	}
+    for (const auto& [attr, val] : attrMap) {
+        if (tableAttrMap.find(attr) != tableAttrMap.end()) {
+            updatedRecord[tableAttrMap[attr]] = val;
+        } else {
+            cerr << "Unknown attribute: " << attr << " for table: " << table_name << endl;
+            return false;
+        }
+    }
 
-	file.close();
-	return true;
+    records[record_id] = updatedRecord;
+
+    ofstream file(table_file, ios::trunc);
+    if (!file.is_open()) {
+        cerr << "Failed to update record in table: " << table_name << endl;
+        return false;
+    }
+
+    for (const auto &record : records) {
+        for (size_t i = 0; i < record.size(); ++i) {
+            file << record[i];
+            if (i < record.size() - 1) file << ",";
+        }
+        file << "\n";
+    }
+
+    file.close();
+    return true;
 }
 
 bool DBManager::deleteRecord(const string &table_name, int record_id) {
