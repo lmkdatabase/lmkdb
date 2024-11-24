@@ -23,8 +23,8 @@ file(GLOB_RECURSE HEADER_FILES include/*.h)
 cmake_policy(SET CMP0144 NEW) # Find package uses upper-case <PACKAGENAME>_ROOT
 cmake_policy(SET CMP0167 NEW) # Use modern Boost CMake package
 
-# Find and link Boost
-find_package(Boost REQUIRED COMPONENTS filesystem)
+# boost library 
+find_package(Boost REQUIRED COMPONENTS filesystem) # Find and link Boost
 
 # Ensure Boost is found
 if(Boost_FOUND)
@@ -34,14 +34,21 @@ else()
     message(FATAL_ERROR "Boost not found!")
 endif()
 
-# Add executable
-add_executable(lmkdb ${SOURCE_FILES})
+add_executable(lmkdb ${SOURCE_FILES}) # Add executable
+target_link_libraries(lmkdb PUBLIC Boost::filesystem) # Link Boost libraries
+target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS}) # Include directories for the target
 
-# Link Boost libraries
-target_link_libraries(lmkdb PUBLIC Boost::filesystem)
+# readline library
+find_path(READLINE_INCLUDE_DIR readline/readline.h PATHS /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include)
+find_library(READLINE_LIBRARY readline PATHS /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib)
 
-# Include directories for the target
-target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS})
+if (READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
+	message(STATUS "Readline found: ${READLINE_INCLUDE_DIR}")
+    target_include_directories(lmkdb PRIVATE ${READLINE_INCLUDE_DIR})
+    target_link_libraries(lmkdb PRIVATE ${READLINE_LIBRARY})
+else()
+    message(FATAL_ERROR "Readline not found!")
+endif()
 
 # Add stricter warning options (optional)
 target_compile_options(lmkdb PRIVATE -Wall -Wextra -Wpedantic)
