@@ -22,7 +22,7 @@ bool DatabaseAPI::validateInteger(const string &input) {
 
 void DatabaseAPI::createOp(const string &tableName,
                            const vector<string> &attributes) {
-    for (auto attr : attributes) {
+    for (const auto &attr : attributes) {
         if (attr == "id") {
             cout << " id attribute name not allowed" << endl;
             return;
@@ -47,7 +47,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
         return;
     }
     // Case 1: delete table_name id:2 attr1 attr2 ...
-    if (tokens[0].find("id:") == 0) {
+    if (tokens[0].starts_with("id:")) {
         size_t pos = tokens[0].find(':');
         if (pos == string::npos || tokens[0].substr(pos + 1).empty()) {
             cerr << "Error: Invalid format." << endl;
@@ -66,7 +66,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
     }
 
     // Case 2: delete table_name id:2
-    if (tokens.size() == 1 && tokens[0].find("id:") == 0) {
+    if (tokens.size() == 1 && tokens[0].starts_with("id:")) {
         size_t pos = tokens[0].find(':');
         if (pos == string::npos || tokens[0].substr(pos + 1).empty()) {
             cerr << "Error: Invalid format." << endl;
@@ -151,9 +151,9 @@ void DatabaseAPI::readOp(const string &tableName,
 
     // Case 2: If one token is provided, expect "id:<number>" format
     if (tokens.size() == 1) {
-        string token = tokens[0];
+        const string &token = tokens[0];
 
-        if (token.find("id:") == 0) {
+        if (token.starts_with("id:")) {
             size_t pos = token.find(':');
             if (pos == string::npos || token.substr(pos + 1).empty()) {
                 cerr << "Error: Invalid index format." << endl;
@@ -180,10 +180,9 @@ void DatabaseAPI::readOp(const string &tableName,
             }
             cout << endl;
             return;
-        } else {
-            cerr << "Error: Expected id: <number> format." << endl;
-            return;
         }
+        cerr << "Error: Expected id: <number> format." << endl;
+        return;
     }
 
     cerr << "Error: Too many arguments provided for read operation." << endl;
