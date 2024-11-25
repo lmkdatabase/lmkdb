@@ -15,7 +15,7 @@ class DatabaseAPI {
     void deleteOp(const std::string& tableName,
                   const std::vector<std::string>& tokens);
     void insertOp(const std::string& tableName,
-                  const std::vector<std::string>& record);
+                  const std::vector<std::string>& tokens);
     void readOp(const std::string& tableName,
                 const std::vector<std::string>& tokens);
     void updateOp(const std::string& tableName, const int& recordId,
