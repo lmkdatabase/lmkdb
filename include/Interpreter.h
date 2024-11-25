@@ -6,14 +6,14 @@
 class DatabaseAPI;
 
 class Interpreter {
-public:
+   public:
     Interpreter();
     ~Interpreter();
 
     void processCommand(const std::string& command);
-    bool validateInteger(const std::string &input);
+    bool validateInteger(const std::string& input);
 
-private:
+   private:
     DatabaseAPI* dbApi;
 };
 

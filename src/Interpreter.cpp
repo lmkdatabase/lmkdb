@@ -1,54 +1,58 @@
 #include "Interpreter.h"
-#include "Api.h"
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include "Api.h"
 
 using namespace std;
 
 Interpreter::Interpreter() : dbApi(new DatabaseAPI()) {}
 
-Interpreter::~Interpreter() { delete dbApi; }
+Interpreter::~Interpreter() {
+    delete dbApi;
+}
 
 bool Interpreter::validateInteger(const string &input) {
     try {
         stoi(input);
         return true;
-    } catch (const std::invalid_argument&) {
+    } catch (const std::invalid_argument &) {
         return false;
-    } catch (const std::out_of_range&) {
+    } catch (const std::out_of_range &) {
         return false;
     }
 }
 
 void Interpreter::processCommand(const string &command) {
-	vector<string> tokens;
-	istringstream stream(command);
-	string token;
+    vector<string> tokens;
+    istringstream stream(command);
+    string token;
 
-	while (stream >> token) { tokens.push_back(token); }
+    while (stream >> token) {
+        tokens.push_back(token);
+    }
 
-	if (tokens.empty()) {
-		cout << "Empty command." << endl;
-		return;
-	}
+    if (tokens.empty()) {
+        cout << "Empty command." << endl;
+        return;
+    }
 
     if (tokens.size() < 2) {
-		cout << "" << endl;
-		return;
-	}
+        cout << "" << endl;
+        return;
+    }
 
-	boost::algorithm::to_lower(tokens[0]);
+    boost::algorithm::to_lower(tokens[0]);
 
-	string operation = tokens[0];
+    string operation = tokens[0];
     string tableName = tokens[1];
 
     if (operation == "create" && tokens.size() >= 3) {
         string tableName = tokens[1];
         vector<string> attributes(tokens.begin() + 2, tokens.end());
         dbApi->createOp(tableName, attributes);
-        
+
     } else if (operation == "insert" && tokens.size() >= 3) {
         string tableName = tokens[1];
         vector<string> newRecord(tokens.begin() + 2, tokens.end());
@@ -74,7 +78,7 @@ void Interpreter::processCommand(const string &command) {
 
     } else if (operation == "read" && tokens.size() >= 2) {
         string tableName = tokens[1];
-        vector<string> attr (tokens.begin() + 2, tokens.end());
+        vector<string> attr(tokens.begin() + 2, tokens.end());
 
         dbApi->readOp(tableName, attr);
 

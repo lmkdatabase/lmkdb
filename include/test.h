@@ -3,8 +3,8 @@
 #define TEST_H
 
 class Test {
-public:
+   public:
     void sayHello();
 };
 
-#endif // TEST_H
+#endif  // TEST_H

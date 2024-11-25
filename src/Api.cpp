@@ -5,20 +5,23 @@ using namespace std;
 
 DatabaseAPI::DatabaseAPI() : dbManager(new DBManager("./database")) {}
 
-DatabaseAPI::~DatabaseAPI() { delete dbManager; }
+DatabaseAPI::~DatabaseAPI() {
+    delete dbManager;
+}
 
 bool DatabaseAPI::validateInteger(const string &input) {
     try {
         stoi(input);
         return true;
-    } catch (const std::invalid_argument&) {
+    } catch (const std::invalid_argument &) {
         return false;
-    } catch (const std::out_of_range&) {
+    } catch (const std::out_of_range &) {
         return false;
     }
 }
 
-void DatabaseAPI::createOp(const string &tableName, const vector<string> &attributes) {
+void DatabaseAPI::createOp(const string &tableName,
+                           const vector<string> &attributes) {
     for (auto attr : attributes) {
         if (attr == "id") {
             cout << " id attribute name not allowed" << endl;
@@ -26,14 +29,15 @@ void DatabaseAPI::createOp(const string &tableName, const vector<string> &attrib
         }
     }
 
-	if (dbManager->createTable(tableName, attributes)) {
-		cout << "Table created: " << tableName << endl;
-	} else {
-		cout << "Failed to create table: " << tableName << endl;
-	}
+    if (dbManager->createTable(tableName, attributes)) {
+        cout << "Table created: " << tableName << endl;
+    } else {
+        cout << "Failed to create table: " << tableName << endl;
+    }
 }
 
-void DatabaseAPI::deleteOp(const string &tableName, const vector<string> &tokens) {
+void DatabaseAPI::deleteOp(const string &tableName,
+                           const vector<string> &tokens) {
     if (tokens.empty()) {
         if (dbManager->deleteTable(tableName)) {
             cout << "Table " << tableName << " deleted successfully." << endl;
@@ -83,8 +87,10 @@ void DatabaseAPI::deleteOp(const string &tableName, const vector<string> &tokens
     unordered_map<string, string> keyValuePairs;
     for (const auto &token : tokens) {
         size_t pos = token.find(':');
-        if (pos == string::npos || token.substr(0, pos).empty() || token.substr(pos + 1).empty()) {
-            cerr << "Error: Invalid attribute-value pair format: " << token << endl;
+        if (pos == string::npos || token.substr(0, pos).empty() ||
+            token.substr(pos + 1).empty()) {
+            cerr << "Error: Invalid attribute-value pair format: " << token
+                 << endl;
             return;
         }
 
@@ -96,36 +102,38 @@ void DatabaseAPI::deleteOp(const string &tableName, const vector<string> &tokens
     dbManager->deleteByAttributes(tableName, keyValuePairs);
 }
 
+void DatabaseAPI::insertOp(const string &tableName,
+                           const vector<string> &tokens) {
+    unordered_map<string, string> mp;
 
-void DatabaseAPI::insertOp(const string &tableName, const vector<string> &tokens) {
-	unordered_map<string, string> mp;
+    for (const auto &token : tokens) {
+        size_t pos = token.find(':');
 
-    for (const auto& token : tokens) {
-		size_t pos = token.find(':');
+        if (pos != string::npos) {
+            string key = token.substr(0, pos);
+            string value = token.substr(pos + 1);
 
-		if (pos != string::npos) {
-			string key = token.substr(0, pos);
-			string value = token.substr(pos + 1);
-
-			mp[key] = value;
-		} else {
-			cerr << "Invalid token: " << token << endl;
-			return;
-		}
+            mp[key] = value;
+        } else {
+            cerr << "Invalid token: " << token << endl;
+            return;
+        }
     }
 
-	if (dbManager->insertRecord(tableName, mp)) {
-		cout << "Inserted into table: " << tableName << endl;
-	} else {
-		cout << "Failed to insert into table: " << tableName << endl;
-	}
+    if (dbManager->insertRecord(tableName, mp)) {
+        cout << "Inserted into table: " << tableName << endl;
+    } else {
+        cout << "Failed to insert into table: " << tableName << endl;
+    }
 }
 
-void DatabaseAPI::readOp(const string &tableName, const vector<string> &tokens) {
+void DatabaseAPI::readOp(const string &tableName,
+                         const vector<string> &tokens) {
     vector<vector<string>> records = dbManager->readAllRecords(tableName);
-    
+
     if (records.empty()) {
-        cout << "No records found or table does not exist: " << tableName << endl;
+        cout << "No records found or table does not exist: " << tableName
+             << endl;
         return;
     }
 
@@ -160,7 +168,8 @@ void DatabaseAPI::readOp(const string &tableName, const vector<string> &tokens) 
 
             int id = stoi(idValue);
             if (id < 0 || id >= static_cast<int>(records.size())) {
-                cerr << "Error: Index out of bounds for table: " << tableName << endl;
+                cerr << "Error: Index out of bounds for table: " << tableName
+                     << endl;
                 return;
             }
 
@@ -181,27 +190,26 @@ void DatabaseAPI::readOp(const string &tableName, const vector<string> &tokens) 
 }
 
 void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
-                              const vector<string> &updatedRecord) {
-	unordered_map<string, string> mp;
+                           const vector<string> &updatedRecord) {
+    unordered_map<string, string> mp;
 
-    for (const auto& token : updatedRecord) {
-		size_t pos = token.find(':');
+    for (const auto &token : updatedRecord) {
+        size_t pos = token.find(':');
 
-		if (pos != string::npos) {
-			string key = token.substr(0, pos);
-			string value = token.substr(pos + 1);
+        if (pos != string::npos) {
+            string key = token.substr(0, pos);
+            string value = token.substr(pos + 1);
 
-			mp[key] = value;
-		} else {
-			cerr << "Invalid token: " << token << endl;
-			return;
-		}
+            mp[key] = value;
+        } else {
+            cerr << "Invalid token: " << token << endl;
+            return;
+        }
     }
 
-	if (dbManager->updateRecord(tableName, recordId, mp)) {
-		cout << "Record updated in table: " << tableName << endl;
-	} else {
-		cout << "Failed to update record in table: " << tableName << endl;
-	}
+    if (dbManager->updateRecord(tableName, recordId, mp)) {
+        cout << "Record updated in table: " << tableName << endl;
+    } else {
+        cout << "Failed to update record in table: " << tableName << endl;
+    }
 }
-

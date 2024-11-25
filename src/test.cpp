@@ -4,4 +4,6 @@
 
 using namespace std;
 
-void Test::sayHello() { cout << "Hello from Test!" << endl; }
+void Test::sayHello() {
+    cout << "Hello from Test!" << endl;
+}

@@ -8,27 +8,30 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-DBManager::DBManager(const string &db_path) : database_path(db_path) {
-	fs::create_directory(database_path);
+DBManager::DBManager(const string& db_path) : database_path(db_path) {
+    fs::create_directory(database_path);
 }
 
 DBManager::~DBManager() = default;
 
-string DBManager::getFilePath(const string &file_name) const {
-	return database_path + "/" + file_name + ".txt";
+string DBManager::getFilePath(const string& file_name) const {
+    return database_path + "/" + file_name + ".txt";
 }
 
-unordered_map<string, int> DBManager::getTableAttributesMap(const string &table_name) {
+unordered_map<string, int> DBManager::getTableAttributesMap(
+    const string& table_name) {
     string mappingFilePath = getFilePath(table_name + "_mapping");
 
     if (!fs::exists(mappingFilePath)) {
-        cerr << "Attribute mapping file does not exist for table: " << table_name << endl;
+        cerr << "Attribute mapping file does not exist for table: "
+             << table_name << endl;
         return {};
     }
 
     ifstream mapping_file(mappingFilePath);
     if (!mapping_file.is_open()) {
-        cerr << "Failed to open attribute mapping file for table: " << table_name << endl;
+        cerr << "Failed to open attribute mapping file for table: "
+             << table_name << endl;
         return {};
     }
 
@@ -53,7 +56,8 @@ unordered_map<string, int> DBManager::getTableAttributesMap(const string &table_
     return attributes_map;
 }
 
-bool DBManager::createTable(const string &table_name, const vector<string> &attributes) {
+bool DBManager::createTable(const string& table_name,
+                            const vector<string>& attributes) {
     string table_file = getFilePath(table_name);
     if (fs::exists(table_file)) {
         cerr << "Table already exists: " << table_name << endl;
@@ -62,7 +66,8 @@ bool DBManager::createTable(const string &table_name, const vector<string> &attr
 
     string attr_mapping = getFilePath(table_name + "_mapping");
     if (fs::exists(attr_mapping)) {
-        cerr << "Attribute mapping for table already exists: " << table_name << endl;
+        cerr << "Attribute mapping for table already exists: " << table_name
+             << endl;
         return false;
     }
 
@@ -74,7 +79,8 @@ bool DBManager::createTable(const string &table_name, const vector<string> &attr
 
     ofstream mapping_file(attr_mapping);
     if (!mapping_file.is_open()) {
-        cerr << "Failed to create attribute mapping for table: " << table_name << endl;
+        cerr << "Failed to create attribute mapping for table: " << table_name
+             << endl;
         return false;
     }
 
@@ -88,7 +94,8 @@ bool DBManager::createTable(const string &table_name, const vector<string> &attr
     return true;
 }
 
-bool DBManager::deleteByIndex(const std::string& table_name, const int& id, const std::vector<std::string>& attributes) {
+bool DBManager::deleteByIndex(const std::string& table_name, const int& id,
+                              const std::vector<std::string>& attributes) {
     std::string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         std::cerr << "Table does not exist: " << table_name << std::endl;
@@ -101,9 +108,11 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id, cons
         return false;
     }
 
-    std::unordered_map<std::string, int> tableAttrMap = getTableAttributesMap(table_name);
+    std::unordered_map<std::string, int> tableAttrMap =
+        getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        std::cerr << "Failed to retrieve attribute mapping for table: " << table_name << std::endl;
+        std::cerr << "Failed to retrieve attribute mapping for table: "
+                  << table_name << std::endl;
         return false;
     }
 
@@ -113,7 +122,7 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id, cons
         for (const auto& attr : attributes) {
             if (tableAttrMap.find(attr) != tableAttrMap.end()) {
                 int attrIndex = tableAttrMap[attr];
-                records[id][attrIndex] = "NULL"; 
+                records[id][attrIndex] = "NULL";
             } else {
                 std::cerr << "Unknown attribute: " << attr << std::endl;
                 return false;
@@ -139,7 +148,9 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id, cons
     return true;
 }
 
-bool DBManager::deleteByAttributes(const std::string& table_name, const std::unordered_map<std::string, std::string>& keyValuePairs) {
+bool DBManager::deleteByAttributes(
+    const std::string& table_name,
+    const std::unordered_map<std::string, std::string>& keyValuePairs) {
     std::string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         std::cerr << "Table does not exist: " << table_name << std::endl;
@@ -147,9 +158,11 @@ bool DBManager::deleteByAttributes(const std::string& table_name, const std::uno
     }
 
     std::vector<std::vector<std::string>> records = readAllRecords(table_name);
-    std::unordered_map<std::string, int> tableAttrMap = getTableAttributesMap(table_name);
+    std::unordered_map<std::string, int> tableAttrMap =
+        getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        std::cerr << "Failed to retrieve attribute mapping for table: " << table_name << std::endl;
+        std::cerr << "Failed to retrieve attribute mapping for table: "
+                  << table_name << std::endl;
         return false;
     }
 
@@ -193,7 +206,7 @@ bool DBManager::deleteByAttributes(const std::string& table_name, const std::uno
     return true;
 }
 
-bool DBManager::deleteTable(const std::string &table_name) {
+bool DBManager::deleteTable(const std::string& table_name) {
     std::string table_file = getFilePath(table_name);
     std::string attr_mapping = getFilePath(table_name + "_mapping");
 
@@ -209,17 +222,19 @@ bool DBManager::deleteTable(const std::string &table_name) {
 
     if (fs::exists(attr_mapping)) {
         if (!fs::remove(attr_mapping)) {
-            std::cerr << "Failed to delete attribute mapping file: " << attr_mapping << std::endl;
+            std::cerr << "Failed to delete attribute mapping file: "
+                      << attr_mapping << std::endl;
             return false;
         }
     }
 
-    std::cout << "Table and mapping deleted successfully: " << table_name << std::endl;
+    std::cout << "Table and mapping deleted successfully: " << table_name
+              << std::endl;
     return true;
 }
 
-bool DBManager::insertRecord(const string &table_name,
-                             const unordered_map<string, string> &attrMap) {
+bool DBManager::insertRecord(const string& table_name,
+                             const unordered_map<string, string>& attrMap) {
     string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         cerr << "Table does not exist: " << table_name << endl;
@@ -234,7 +249,8 @@ bool DBManager::insertRecord(const string &table_name,
 
     unordered_map<string, int> tableAttrMap = getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        cerr << "Failed to retrieve attribute mapping for table: " << table_name << endl;
+        cerr << "Failed to retrieve attribute mapping for table: " << table_name
+             << endl;
         return false;
     }
 
@@ -244,7 +260,8 @@ bool DBManager::insertRecord(const string &table_name,
         if (tableAttrMap.find(attr) != tableAttrMap.end()) {
             values[tableAttrMap[attr]] = val;
         } else {
-            cerr << "Unknown attribute: " << attr << " for table: " << table_name << endl;
+            cerr << "Unknown attribute: " << attr
+                 << " for table: " << table_name << endl;
             return false;
         }
     }
@@ -261,37 +278,39 @@ bool DBManager::insertRecord(const string &table_name,
     return true;
 }
 
-vector<vector<string>> DBManager::readAllRecords(const string &table_name) {
-	string table_file = getFilePath(table_name);
-	vector<vector<string>> records;
+vector<vector<string>> DBManager::readAllRecords(const string& table_name) {
+    string table_file = getFilePath(table_name);
+    vector<vector<string>> records;
 
-	if (!fs::exists(table_file)) {
-		cerr << "Table does not exist: " << table_name << endl;
-		return records;
-	}
+    if (!fs::exists(table_file)) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return records;
+    }
 
-	ifstream file(table_file);
-	if (!file.is_open()) {
-		cerr << "Failed to read records from table: " << table_name << endl;
-		return records;
-	}
+    ifstream file(table_file);
+    if (!file.is_open()) {
+        cerr << "Failed to read records from table: " << table_name << endl;
+        return records;
+    }
 
-	string line;
-	while (getline(file, line)) {
-		istringstream stream(line);
-		string field;
-		vector<string> record;
+    string line;
+    while (getline(file, line)) {
+        istringstream stream(line);
+        string field;
+        vector<string> record;
 
-		while (getline(stream, field, ',')) { record.push_back(field); }
-		records.push_back(record);
-	}
+        while (getline(stream, field, ',')) {
+            record.push_back(field);
+        }
+        records.push_back(record);
+    }
 
-	file.close();
-	return records;
+    file.close();
+    return records;
 }
 
-bool DBManager::updateRecord(const string &table_name, const int& id,
-                             const unordered_map<string, string> &attrMap) {
+bool DBManager::updateRecord(const string& table_name, const int& id,
+                             const unordered_map<string, string>& attrMap) {
     string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         cerr << "Table does not exist: " << table_name << endl;
@@ -306,7 +325,8 @@ bool DBManager::updateRecord(const string &table_name, const int& id,
 
     unordered_map<string, int> tableAttrMap = getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        cerr << "Failed to retrieve attribute mapping for table: " << table_name << endl;
+        cerr << "Failed to retrieve attribute mapping for table: " << table_name
+             << endl;
         return false;
     }
 
@@ -316,7 +336,8 @@ bool DBManager::updateRecord(const string &table_name, const int& id,
         if (tableAttrMap.find(attr) != tableAttrMap.end()) {
             updatedRecord[tableAttrMap[attr]] = val;
         } else {
-            cerr << "Unknown attribute: " << attr << " for table: " << table_name << endl;
+            cerr << "Unknown attribute: " << attr
+                 << " for table: " << table_name << endl;
             return false;
         }
     }
@@ -329,7 +350,7 @@ bool DBManager::updateRecord(const string &table_name, const int& id,
         return false;
     }
 
-    for (const auto &record : records) {
+    for (const auto& record : records) {
         for (size_t i = 0; i < record.size(); ++i) {
             file << record[i];
             if (i < record.size() - 1) file << ",";
@@ -340,4 +361,3 @@ bool DBManager::updateRecord(const string &table_name, const int& id,
     file.close();
     return true;
 }
-
