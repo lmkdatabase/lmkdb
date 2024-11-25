@@ -150,7 +150,7 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id,
 
 bool DBManager::deleteByAttributes(
     const std::string& table_name,
-    const std::unordered_map<std::string, std::string>& keyValuePairs) {
+    const std::unordered_map<std::string, std::string>& attrMap) {
     std::string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         std::cerr << "Table does not exist: " << table_name << std::endl;
@@ -170,7 +170,7 @@ bool DBManager::deleteByAttributes(
     for (const auto& record : records) {
         bool match = true;
 
-        for (const auto& [key, value] : keyValuePairs) {
+        for (const auto& [key, value] : attrMap) {
             if (tableAttrMap.find(key) == tableAttrMap.end()) {
                 std::cerr << "Unknown attribute: " << key << std::endl;
                 return false;

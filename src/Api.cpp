@@ -84,7 +84,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
     }
 
     // Case 3: delete table_name attr1:val1 attr2:val2
-    unordered_map<string, string> keyValuePairs;
+    unordered_map<string, string> attrMap;
     for (const auto &token : tokens) {
         size_t pos = token.find(':');
         if (pos == string::npos || token.substr(0, pos).empty() ||
@@ -96,10 +96,10 @@ void DatabaseAPI::deleteOp(const string &tableName,
 
         string key = token.substr(0, pos);
         string value = token.substr(pos + 1);
-        keyValuePairs[key] = value;
+        attrMap[key] = value;
     }
 
-    dbManager->deleteByAttributes(tableName, keyValuePairs);
+    dbManager->deleteByAttributes(tableName, attrMap);
 }
 
 void DatabaseAPI::insertOp(const string &tableName,
