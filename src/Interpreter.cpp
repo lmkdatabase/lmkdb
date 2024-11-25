@@ -46,7 +46,6 @@ void Interpreter::processCommand(const string &command) {
     boost::algorithm::to_lower(tokens[0]);
 
     string operation = tokens[0];
-    string tableName = tokens[1];
 
     if (operation == "create" && tokens.size() >= 3) {
         string tableName = tokens[1];
