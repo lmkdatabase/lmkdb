@@ -72,8 +72,11 @@ void Interpreter::processCommand(const string &command) {
 
         dbApi->deleteOp(tableName, attributes);
 
-    }  else if (operation == "read" && tokens.size() == 3) {
-        dbApi->readOp(tokens[2]);
+    } else if (operation == "read" && tokens.size() >= 2) {
+        string tableName = tokens[1];
+        vector<string> attr (tokens.begin() + 2, tokens.end());
+
+        dbApi->readOp(tableName, attr);
 
     } else {
         cout << "Unknown command or invalid syntax." << endl;

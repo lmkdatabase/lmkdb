@@ -53,7 +53,6 @@ unordered_map<string, int> DBManager::getTableAttributesMap(const string &table_
     return attributes_map;
 }
 
-
 bool DBManager::createTable(const string &table_name, const vector<string> &attributes) {
     string table_file = getFilePath(table_name);
     if (fs::exists(table_file)) {
@@ -89,8 +88,7 @@ bool DBManager::createTable(const string &table_name, const vector<string> &attr
     return true;
 }
 
-
-bool DBManager::deleteByIndex(const std::string& table_name, int idx, const std::vector<std::string>& attributes) {
+bool DBManager::deleteByIndex(const std::string& table_name, const int& id, const std::vector<std::string>& attributes) {
     std::string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
         std::cerr << "Table does not exist: " << table_name << std::endl;
@@ -98,8 +96,8 @@ bool DBManager::deleteByIndex(const std::string& table_name, int idx, const std:
     }
 
     std::vector<std::vector<std::string>> records = readAllRecords(table_name);
-    if (idx < 0 || idx >= static_cast<int>(records.size())) {
-        std::cerr << "Index out of bounds: " << idx << std::endl;
+    if (id < 0 || id >= static_cast<int>(records.size())) {
+        std::cerr << "Index out of bounds: " << id << std::endl;
         return false;
     }
 
@@ -110,12 +108,12 @@ bool DBManager::deleteByIndex(const std::string& table_name, int idx, const std:
     }
 
     if (attributes.empty()) {
-        records.erase(records.begin() + idx);
+        records.erase(records.begin() + id);
     } else {
         for (const auto& attr : attributes) {
             if (tableAttrMap.find(attr) != tableAttrMap.end()) {
                 int attrIndex = tableAttrMap[attr];
-                records[idx][attrIndex] = "NULL"; 
+                records[id][attrIndex] = "NULL"; 
             } else {
                 std::cerr << "Unknown attribute: " << attr << std::endl;
                 return false;
@@ -292,7 +290,7 @@ vector<vector<string>> DBManager::readAllRecords(const string &table_name) {
 	return records;
 }
 
-bool DBManager::updateRecord(const string &table_name, int record_id,
+bool DBManager::updateRecord(const string &table_name, const int& id,
                              const unordered_map<string, string> &attrMap) {
     string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
@@ -301,8 +299,8 @@ bool DBManager::updateRecord(const string &table_name, int record_id,
     }
 
     vector<vector<string>> records = readAllRecords(table_name);
-    if (record_id < 0 || record_id >= (int)records.size()) {
-        cerr << "Record ID out of bounds: " << record_id << endl;
+    if (id < 0 || id >= (int)records.size()) {
+        cerr << "Record ID out of bounds: " << id << endl;
         return false;
     }
 
@@ -312,7 +310,7 @@ bool DBManager::updateRecord(const string &table_name, int record_id,
         return false;
     }
 
-    vector<string> updatedRecord = records[record_id];
+    vector<string> updatedRecord = records[id];
 
     for (const auto& [attr, val] : attrMap) {
         if (tableAttrMap.find(attr) != tableAttrMap.end()) {
@@ -323,7 +321,7 @@ bool DBManager::updateRecord(const string &table_name, int record_id,
         }
     }
 
-    records[record_id] = updatedRecord;
+    records[id] = updatedRecord;
 
     ofstream file(table_file, ios::trunc);
     if (!file.is_open()) {
