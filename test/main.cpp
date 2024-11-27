@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <iostream>
 
 std::string hw() {
     return "hello world";
@@ -10,7 +9,6 @@ TEST(HelloWorldTest, saysHelloWorld) {
 }
 
 int main(int argc, char *argv[]) {
-    std::cout << "testing\n";
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
