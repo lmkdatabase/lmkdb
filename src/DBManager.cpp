@@ -361,3 +361,6 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
     file.close();
     return true;
 }
+
+bool DBManager::joinTables(const vector<string>& tables,
+                           vector<string>& attributes) {}
