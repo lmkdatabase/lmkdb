@@ -11,7 +11,7 @@ class Interpreter {
     ~Interpreter();
 
     void processCommand(const std::string& command);
-    bool validateInteger(const std::string& input);
+    static bool validateInteger(const std::string& input);
 
    private:
     DatabaseAPI* dbApi;

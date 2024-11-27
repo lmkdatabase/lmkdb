@@ -18,6 +18,8 @@ include_directories(${INCLUDE_PATHS})
 # Source and header files
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 file(GLOB_RECURSE HEADER_FILES include/*.h)
+set(SOURCE_NON_MAIN ${SOURCE_FILES})
+list(FILTER SOURCE_NON_MAIN EXCLUDE REGEX "src/main.cpp$")
 
 # Enable necessary policies
 cmake_policy(SET CMP0144 NEW) # Find package uses upper-case <PACKAGENAME>_ROOT
@@ -64,9 +66,9 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
 )
 FetchContent_MakeAvailable(googletest)
-add_executable(tests test/main.cpp)
-target_link_libraries(tests PRIVATE gtest)
-target_include_directories(tests PRIVATE src)
+add_executable(tests test/main.cpp ${SOURCE_NON_MAIN})
+target_link_libraries(tests PRIVATE gtest Boost::filesystem)
+target_include_directories(tests PRIVATE src ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS})
 
 include(GoogleTest)
 gtest_discover_tests(tests)
