@@ -34,13 +34,14 @@ else()
     message(FATAL_ERROR "Boost not found!")
 endif()
 
-add_executable(lmkdb ${SOURCE_FILES}) # Add executable
-target_link_libraries(lmkdb PUBLIC Boost::filesystem) # Link Boost libraries
-target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS}) # Include directories for the target
-
 # readline library
 find_path(READLINE_INCLUDE_DIR readline/readline.h PATHS /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include)
 find_library(READLINE_LIBRARY readline PATHS /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib)
+
+
+add_executable(lmkdb ${SOURCE_FILES}) # Add executable
+target_link_libraries(lmkdb PUBLIC Boost::filesystem) # Link Boost libraries
+target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS}) # Include directories for the target
 
 if (READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
 	message(STATUS "Readline found: ${READLINE_INCLUDE_DIR}")
@@ -52,3 +53,21 @@ endif()
 
 # Add stricter warning options (optional)
 target_compile_options(lmkdb PRIVATE -Wall -Wextra -Wpedantic)
+
+# testing stuff
+enable_testing()
+
+include(FetchContent)
+
+# fetch googletest - no need to brew install ;)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+)
+FetchContent_MakeAvailable(googletest)
+add_executable(tests test/main.cpp)
+target_link_libraries(tests PRIVATE)
+target_include_directories(tests PRIVATE src)
+
+include(GoogleTest)
+gtest_discover_tests(tests)
