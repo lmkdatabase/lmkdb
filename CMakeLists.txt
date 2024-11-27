@@ -56,17 +56,16 @@ target_compile_options(lmkdb PRIVATE -Wall -Wextra -Wpedantic)
 
 # testing stuff
 enable_testing()
-
 include(FetchContent)
-
 # fetch googletest - no need to brew install ;)
 FetchContent_Declare(
   googletest
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
   URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
 )
 FetchContent_MakeAvailable(googletest)
 add_executable(tests test/main.cpp)
-target_link_libraries(tests PRIVATE)
+target_link_libraries(tests PRIVATE gtest)
 target_include_directories(tests PRIVATE src)
 
 include(GoogleTest)
