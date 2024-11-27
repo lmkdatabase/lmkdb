@@ -10,7 +10,7 @@ using namespace std;
 
 boost::filesystem::path get_or_create_cfg_path() {
 #ifdef _WIN32
-    const std::string home(getenv("USERPROFILE"));
+    const string home(getenv("USERPROFILE"));
 #else
     const string home(getenv("HOME"));
 #endif
