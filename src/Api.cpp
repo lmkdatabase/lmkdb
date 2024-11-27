@@ -212,3 +212,6 @@ void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
         cout << "Failed to update record in table: " << tableName << endl;
     }
 }
+
+void DatabaseAPI::joinOp(const vector<string> &tableNames,
+                         const vector<string> &attributes) {}

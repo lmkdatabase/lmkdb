@@ -81,6 +81,8 @@ void Interpreter::processCommand(const string &command) {
 
         dbApi->readOp(tableName, attr);
 
+    } else if (operation == "join") {
+        cout << "ble command or invalid syntax." << endl;
     } else {
         cout << "Unknown command or invalid syntax." << endl;
     }
