@@ -10,9 +10,7 @@
 using namespace std;
 
 Interpreter::Interpreter(string_view dbDir)
-    : dbApi(new DatabaseAPI(string(dbDir))) {}
-Interpreter::Interpreter(string_view dbDir) : dbApi(make_unique<DatabaseAPI>(string(dbDir)) {}
-
+    : dbApi(make_unique<DatabaseAPI>(string(dbDir))) {}
 
 Interpreter::~Interpreter() = default;
 
