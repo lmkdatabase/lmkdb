@@ -1,13 +1,14 @@
 #ifndef API_H
 #define API_H
 
+#include <memory>
 #include <string>
 #include <vector>
 #include "DBManager.h"
 
 class DatabaseAPI {
    public:
-    DatabaseAPI();
+    DatabaseAPI(const std::string& dbPath);
     ~DatabaseAPI();
 
     void createOp(const std::string& tableName,
@@ -23,7 +24,7 @@ class DatabaseAPI {
     void joinOp(const std::vector<std::string>& query);
 
    private:
-    DBManager* dbManager;
+    std::unique_ptr<DBManager> dbManager;
 
     bool validateInteger(const std::string& input);
 };

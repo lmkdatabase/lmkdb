@@ -1,14 +1,14 @@
 #include "Api.h"
 #include <iostream>
+#include <memory>
 #include <unordered_map>
 
 using namespace std;
 
-DatabaseAPI::DatabaseAPI() : dbManager(new DBManager("./database")) {}
+DatabaseAPI::DatabaseAPI(const string &dbPath)
+    : dbManager(make_unique<DBManager>(dbPath)) {}
 
-DatabaseAPI::~DatabaseAPI() {
-    delete dbManager;
-}
+DatabaseAPI::~DatabaseAPI() = default;
 
 bool DatabaseAPI::validateInteger(const string &input) {
     try {

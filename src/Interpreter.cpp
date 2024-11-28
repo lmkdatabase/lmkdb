@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include "Api.h"
@@ -9,11 +10,12 @@
 
 using namespace std;
 
-Interpreter::Interpreter() : dbApi(new DatabaseAPI()) {}
+Interpreter::Interpreter(string_view dbDir)
+    : dbApi(new DatabaseAPI(string(dbDir))) {}
+Interpreter::Interpreter(string_view dbDir) : dbApi(make_unique<DatabaseAPI>(string(dbDir)) {}
 
-Interpreter::~Interpreter() {
-    delete dbApi;
-}
+
+Interpreter::~Interpreter() = default;
 
 bool Interpreter::validateInteger(const string &input) {
     try {
