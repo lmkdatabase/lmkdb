@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include "Api.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -36,11 +37,6 @@ void Interpreter::processCommand(const string &command) {
 
     if (tokens.empty()) {
         cout << "Empty command." << endl;
-        return;
-    }
-
-    if (tokens.size() < 2) {
-        cout << "" << endl;
         return;
     }
 
@@ -96,7 +92,11 @@ void Interpreter::processCommand(const string &command) {
         vector<string> attributes(delimiter + 1, tokens.end());
 
         dbApi->joinOp(tables, attributes);
+
+    } else if (operation == "help") {
+        printUsage();
     } else {
-        cout << "Unknown command or invalid syntax." << endl;
+        cout << "Unknown command \"" << operation
+             << "\"\nType \"help\" for usage" << endl;
     }
 }
