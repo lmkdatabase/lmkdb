@@ -216,6 +216,7 @@ void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
 
 void DatabaseAPI::joinOp(const vector<string> &query) {
     unordered_map<string, string> attrMap;
+    vector<string> tables;
 
     for (const auto &token : query) {
         size_t pos = token.find('.');
@@ -225,11 +226,12 @@ void DatabaseAPI::joinOp(const vector<string> &query) {
             string value = token.substr(pos + 1);
 
             attrMap[key] = value;
+            tables.push_back(key);
         } else {
             cerr << "Invalid token: " << token << endl;
             return;
         }
     }
 
-    dbManager->joinTables(attrMap);
+    dbManager->joinTables(tables, attrMap);
 }

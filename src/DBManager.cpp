@@ -1,5 +1,6 @@
 #include "DBManager.h"
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -362,4 +363,64 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
     return true;
 }
 
-bool DBManager::joinTables(unordered_map<string, string>& attrMap) {}
+bool DBManager::joinTables(const vector<string>& tables,
+                           unordered_map<string, string>& attrMap) {
+    unordered_map<string, vector<vector<string>>> record_map;
+    for (const auto& [table, attr] : attrMap) {
+        string table_path = getFilePath(table);
+
+        if (!fs::exists(table_path)) {
+            cerr << "Table does not exist: " << table << endl;
+            return false;
+        }
+
+        record_map[table] = readAllRecords(table);
+    }
+
+    vector<vector<string>> records = readAllRecords(tables[0]);
+    unordered_map<string, int> tableAttrMap = getTableAttributesMap(tables[0]);
+
+    size_t idx = 0;
+    string join = tables[idx];
+
+    while (idx < tables.size() - 1) {
+        string right_table = tables[idx + 1];
+
+        vector<vector<string>> join_records = record_map[join];
+        vector<vector<string>> right_records = record_map[right_table];
+
+        unordered_map<string, int> join_attr_map = getTableAttributesMap(join);
+        unordered_map<string, int> right_attr_map =
+            getTableAttributesMap(right_table);
+
+        int join_index = join_attr_map[attrMap[join]];
+        int right_index = right_attr_map[attrMap[right_table]];
+
+        vector<vector<string>> result;
+
+        for (const auto& left_row : join_records) {
+            for (const auto& right_row : right_records) {
+                if (left_row[join_index] == right_row[right_index]) {
+                    vector<string> combined_row = left_row;
+                    combined_row.insert(combined_row.end(), right_row.begin(),
+                                        right_row.end());
+                    result.push_back(combined_row);
+                }
+            }
+        }
+
+        idx++;
+
+        cout << "Join Result " << idx << ":\n";
+        for (const auto& row : result) {
+            cout << "[";
+            for (size_t i = 0; i < row.size(); i++) {
+                cout << row[i];
+                if (i < row.size() - 1) cout << ", ";
+            }
+            cout << "]\n";
+        }
+    }
+
+    return true;
+}
