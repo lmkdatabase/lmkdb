@@ -78,20 +78,10 @@ void Interpreter::processCommand(const string &command) {
 
         dbApi->readOp(tableName, attr);
 
-    } else if (operation == "join" && tokens.size() >= 4) {
-        auto delimiter = find(tokens.begin() + 1, tokens.end(), "-");
+    } else if (operation == "join" && tokens.size() >= 3) {
+        vector<string> query(tokens.begin() + 1, tokens.end());
 
-        if (delimiter == tokens.end()) {
-            cout << "Please follow the specified format of a join query, "
-                    "missing -"
-                 << endl;
-            return;
-        }
-
-        vector<string> tables(tokens.begin(), delimiter);
-        vector<string> attributes(delimiter + 1, tokens.end());
-
-        dbApi->joinOp(tables, attributes);
+        dbApi->joinOp(query);
 
     } else if (operation == "help") {
         printUsage();

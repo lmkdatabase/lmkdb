@@ -214,23 +214,22 @@ void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
     }
 }
 
-void DatabaseAPI::joinOp(const vector<string> &tableNames,
-                         const vector<string> &attributes) {
-    unordered_map<string, string> attr_map;
+void DatabaseAPI::joinOp(const vector<string> &query) {
+    unordered_map<string, string> attrMap;
 
-    for (const auto &token : attributes) {
-        size_t pos = token.find(':');
+    for (const auto &token : query) {
+        size_t pos = token.find('.');
 
         if (pos != string::npos) {
             string key = token.substr(0, pos);
             string value = token.substr(pos + 1);
 
-            attr_map[key] = value;
+            attrMap[key] = value;
         } else {
             cerr << "Invalid token: " << token << endl;
             return;
         }
     }
 
-    dbManager->joinTables(tableNames, attr_map);
+    dbManager->joinTables(attrMap);
 }
