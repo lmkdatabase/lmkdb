@@ -7,7 +7,7 @@
 
 class DBManager {
    public:
-    DBManager(const std::string& db_path);
+    DBManager(std::string db_path);
     ~DBManager();
 
     bool createTable(const std::string& table_name,
@@ -30,7 +30,7 @@ class DBManager {
         const std::unordered_map<std::string, std::string>& attrMap);
 
    private:
-    std::string database_path;
+    const std::string database_path;
 
     std::string getFilePath(const std::string& file_name) const;
     std::unordered_map<std::string, int> getTableAttributesMap(

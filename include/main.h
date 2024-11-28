@@ -14,4 +14,6 @@ constexpr array<string_view, 2> config_dir = {".config", "lmk"};
 #endif
 constexpr string_view histfile = ".lmkhistory";
 
+constexpr string_view db_dir = "./database/";
+
 #endif /* MAIN_H */

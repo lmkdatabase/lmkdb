@@ -7,7 +7,7 @@
 
 class DatabaseAPI {
    public:
-    DatabaseAPI();
+    DatabaseAPI(const std::string& dbPath);
     ~DatabaseAPI();
 
     void createOp(const std::string& tableName,

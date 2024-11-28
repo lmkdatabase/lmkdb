@@ -3,7 +3,8 @@
 
 using namespace std;
 
-DatabaseAPI::DatabaseAPI() : dbManager(new DBManager("./database")) {}
+DatabaseAPI::DatabaseAPI(const string &dbPath)
+    : dbManager(new DBManager(dbPath)) {}
 
 DatabaseAPI::~DatabaseAPI() {
     delete dbManager;
