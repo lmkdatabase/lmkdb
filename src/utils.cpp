@@ -34,8 +34,11 @@ void printUsage() {
          << "\n\tUpdate attributes attr with "
             "values val... for row with index <idx> from table "
             "<name>\n\n"
-         << bold("join <table1>-><attr1> <table2>-><attr2>")
-         << "\n\tJoin tables <table1> and <table2> on attributes <attr1> "
-            "and <attr2>, performs inner join"
+         << bold(
+                "join <table1>.<attr1> <table2>.<attr2> "
+                "[<table_n>.<attr_n>...]")
+         << "\n\tJoin tables <table1> and <table2> (and up to "
+            "<table_n>) on attributes <attr1> "
+            "and <attr2> (and up to <attr_n>), performs inner join"
          << endl;
 }

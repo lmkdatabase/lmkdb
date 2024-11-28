@@ -15,7 +15,7 @@
 
 **> update \<name\> idx:\<idx\> [attr:val...]** Update attributes attr with values val... for row with index \<idx\> from table \<name\>
 
-**> join \<table1\>->\<attr1\> \<table2\>->\<attr2\>** Join tables \<table1\> and \<table2\> on attributes \<attr1\> and \<attr2\>, performs inner join
+**> join \<table1\>.\<attr1\> \<table2\>.\<attr2\> [\<table_n\>.\<attr_n\>...]** Join tables \<table1\> and \<table2\> (and up to \<table_n\>) on attributes \<attr1\> and \<attr2\> (up to \<attr_n\>), performs inner join
 
 ## Build Instructions
 
