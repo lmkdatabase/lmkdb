@@ -430,5 +430,13 @@ bool DBManager::joinTables(const vector<string>& tables,
         join_table = joined_table_name;
     }
 
+    for (const auto& record : record_map[join_table]) {
+        for (size_t i = 0; i < record.size(); ++i) {
+            cout << record[i];
+            if (i < record.size() - 1) cout << ", ";
+        }
+        cout << endl;
+    }
+
     return true;
 }
