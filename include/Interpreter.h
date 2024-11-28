@@ -8,7 +8,7 @@ class DatabaseAPI;
 
 class Interpreter {
    public:
-    Interpreter();
+    Interpreter(std::string_view dbDir);
     ~Interpreter();
 
     void processCommand(const std::string& command);

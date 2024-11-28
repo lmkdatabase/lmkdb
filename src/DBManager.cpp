@@ -4,11 +4,12 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 
 namespace fs = boost::filesystem;
 using namespace std;
 
-DBManager::DBManager(const string& db_path) : database_path(db_path) {
+DBManager::DBManager(string dbPath) : database_path(std::move(dbPath)) {
     fs::create_directory(database_path);
 }
 
