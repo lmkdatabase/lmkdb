@@ -1,18 +1,20 @@
 #include "Interpreter.h"
 #include <boost/algorithm/string.hpp>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include "Api.h"
+#include "utils.h"
 
 using namespace std;
 
 Interpreter::Interpreter(string_view dbDir)
     : dbApi(new DatabaseAPI(string(dbDir))) {}
+Interpreter::Interpreter(string_view dbDir) : dbApi(make_unique<DatabaseAPI>(string(dbDir)) {}
 
-Interpreter::~Interpreter() {
-    delete dbApi;
-}
+
+Interpreter::~Interpreter() = default;
 
 bool Interpreter::validateInteger(const string &input) {
     try {
@@ -36,11 +38,6 @@ void Interpreter::processCommand(const string &command) {
 
     if (tokens.empty()) {
         cout << "Empty command." << endl;
-        return;
-    }
-
-    if (tokens.size() < 2) {
-        cout << "" << endl;
         return;
     }
 
@@ -82,7 +79,10 @@ void Interpreter::processCommand(const string &command) {
 
         dbApi->readOp(tableName, attr);
 
+    } else if (operation == "help") {
+        printUsage();
     } else {
-        cout << "Unknown command or invalid syntax." << endl;
+        cout << "Unknown command \"" << operation
+             << "\"\nType \"help\" for usage" << endl;
     }
 }
