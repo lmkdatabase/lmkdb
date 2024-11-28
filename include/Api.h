@@ -1,6 +1,7 @@
 #ifndef API_H
 #define API_H
 
+#include <memory>
 #include <string>
 #include <vector>
 #include "DBManager.h"
@@ -22,7 +23,7 @@ class DatabaseAPI {
                   const std::vector<std::string>& updatedRecord);
 
    private:
-    DBManager* dbManager;
+    std::unique_ptr<DBManager> dbManager;
 
     bool validateInteger(const std::string& input);
 };

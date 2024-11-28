@@ -1,13 +1,12 @@
 #include "Api.h"
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
-DatabaseAPI::DatabaseAPI() : dbManager(new DBManager("./database")) {}
+DatabaseAPI::DatabaseAPI() : dbManager(make_unique<DBManager>("./database")) {}
 
-DatabaseAPI::~DatabaseAPI() {
-    delete dbManager;
-}
+DatabaseAPI::~DatabaseAPI() = default;
 
 bool DatabaseAPI::validateInteger(const string &input) {
     try {
