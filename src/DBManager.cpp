@@ -366,6 +366,8 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
 bool DBManager::joinTables(const vector<string>& tables,
                            unordered_map<string, string>& attrMap) {
     unordered_map<string, vector<vector<string>>> record_map;
+    unordered_map<string, unordered_map<string, int>> attr_maps;
+
     for (const auto& [table, attr] : attrMap) {
         string table_path = getFilePath(table);
 
@@ -375,29 +377,39 @@ bool DBManager::joinTables(const vector<string>& tables,
         }
 
         record_map[table] = readAllRecords(table);
+        attr_maps[table] = getTableAttributesMap(table);
     }
 
-    vector<vector<string>> records = readAllRecords(tables[0]);
-    unordered_map<string, int> tableAttrMap = getTableAttributesMap(tables[0]);
-
     size_t idx = 0;
-    string join = tables[idx];
+    string join_table = tables[idx];
 
     while (idx < tables.size() - 1) {
         string right_table = tables[idx + 1];
 
-        vector<vector<string>> join_records = record_map[join];
+        vector<vector<string>> join_records = record_map[join_table];
         vector<vector<string>> right_records = record_map[right_table];
 
-        unordered_map<string, int> join_attr_map = getTableAttributesMap(join);
-        unordered_map<string, int> right_attr_map =
-            getTableAttributesMap(right_table);
+        auto& join_attr_map = attr_maps[join_table];
+        auto& right_attr_map = attr_maps[right_table];
 
-        int join_index = join_attr_map[attrMap[join]];
+        int join_index = join_attr_map[attrMap[join_table]];
         int right_index = right_attr_map[attrMap[right_table]];
+
+        // Create new attribute map for joined result
+        unordered_map<string, int> new_attr_map;
+        int col_idx = 0;
+
+        for (const auto& [attr, idx] : join_attr_map) {
+            new_attr_map[join_table + "." + attr] = col_idx++;
+        }
+
+        for (const auto& [attr, idx] : right_attr_map) {
+            new_attr_map[right_table + "." + attr] = col_idx++;
+        }
 
         vector<vector<string>> result;
 
+        // Join is performed here
         for (const auto& left_row : join_records) {
             for (const auto& right_row : right_records) {
                 if (left_row[join_index] == right_row[right_index]) {
@@ -409,7 +421,13 @@ bool DBManager::joinTables(const vector<string>& tables,
             }
         }
 
+        // Update values for next iteration
+        string joined_table_name = join_table + "_" + right_table;
+        record_map[joined_table_name] = result;
+        attr_maps[joined_table_name] = new_attr_map;
+
         idx++;
+        join_table = joined_table_name;
 
         cout << "Join Result " << idx << ":\n";
         for (const auto& row : result) {
