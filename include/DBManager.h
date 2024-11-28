@@ -30,7 +30,7 @@ class DBManager {
         const std::unordered_map<std::string, std::string>& attrMap);
 
     bool joinTables(const std::vector<std::string>& tables,
-                    std::vector<std::string>& attributes);
+                    std::unordered_map<std::string, std::string>& attrMap);
 
    private:
     std::string database_path;

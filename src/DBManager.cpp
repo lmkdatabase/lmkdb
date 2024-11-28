@@ -363,4 +363,4 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
 }
 
 bool DBManager::joinTables(const vector<string>& tables,
-                           vector<string>& attributes) {}
+                           unordered_map<string, string>& attrMap) {}
