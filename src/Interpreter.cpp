@@ -1,4 +1,5 @@
 #include "Interpreter.h"
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <sstream>
@@ -81,8 +82,20 @@ void Interpreter::processCommand(const string &command) {
 
         dbApi->readOp(tableName, attr);
 
-    } else if (operation == "join") {
-        cout << "ble command or invalid syntax." << endl;
+    } else if (operation == "join" && tokens.size() >= 4) {
+        auto delimiter = find(tokens.begin() + 1, tokens.end(), "-");
+
+        if (delimiter == tokens.end()) {
+            cout << "Please follow the specified format of a join query, "
+                    "missing -"
+                 << endl;
+            return;
+        }
+
+        vector<string> tables(tokens.begin(), delimiter);
+        vector<string> attributes(delimiter + 1, tokens.end());
+
+        dbApi->joinOp(tables, attributes);
     } else {
         cout << "Unknown command or invalid syntax." << endl;
     }
