@@ -384,7 +384,7 @@ bool DBManager::joinTables(const vector<string>& tables,
     string join_table = tables[idx];
 
     while (idx < tables.size() - 1) {
-        string right_table = tables[idx + 1];
+        const string& right_table = tables[idx + 1];
 
         vector<vector<string>> join_records = record_map[join_table];
         vector<vector<string>> right_records = record_map[right_table];
@@ -428,16 +428,6 @@ bool DBManager::joinTables(const vector<string>& tables,
 
         idx++;
         join_table = joined_table_name;
-
-        cout << "Join Result " << idx << ":\n";
-        for (const auto& row : result) {
-            cout << "[";
-            for (size_t i = 0; i < row.size(); i++) {
-                cout << row[i];
-                if (i < row.size() - 1) cout << ", ";
-            }
-            cout << "]\n";
-        }
     }
 
     return true;
