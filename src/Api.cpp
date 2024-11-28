@@ -5,9 +5,7 @@
 using namespace std;
 
 DatabaseAPI::DatabaseAPI(const string &dbPath)
-    : dbManager(new DBManager(dbPath)) {}
-DatabaseAPI::DatabaseAPI(const string &dbPath) : dbManager(make_unique<DBManager>(dbPath)) {}
-
+    : dbManager(make_unique<DBManager>(dbPath)) {}
 
 DatabaseAPI::~DatabaseAPI() = default;
 
