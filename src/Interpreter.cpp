@@ -39,11 +39,6 @@ void Interpreter::processCommand(const string &command) {
         return;
     }
 
-    // if (tokens.size() < 2) {
-    //     cout << "" << endl;
-    //     return;
-    // }
-
     boost::algorithm::to_lower(tokens[0]);
 
     string operation = tokens[0];
