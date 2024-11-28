@@ -7,7 +7,7 @@
 
 class DBManager {
    public:
-    DBManager(std::string db_path);
+    DBManager(std::string dbPath);
     ~DBManager();
 
     bool createTable(const std::string& table_name,

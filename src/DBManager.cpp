@@ -9,7 +9,7 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-DBManager::DBManager(string db_path) : database_path(std::move(db_path)) {
+DBManager::DBManager(string dbPath) : database_path(std::move(dbPath)) {
     fs::create_directory(database_path);
 }
 

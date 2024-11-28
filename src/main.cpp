@@ -41,7 +41,7 @@ void exit_lmk() {
 }
 
 int main() {
-    Interpreter interpreter(db_dir);
+    Interpreter interpreter(dbDir);
     std::string command;
 
     /* initialize lmk*/
