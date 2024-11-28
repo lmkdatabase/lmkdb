@@ -7,7 +7,8 @@
 
 using namespace std;
 
-Interpreter::Interpreter() : dbApi(new DatabaseAPI()) {}
+Interpreter::Interpreter(string_view db_dir)
+    : dbApi(new DatabaseAPI(string(db_dir))) {}
 
 Interpreter::~Interpreter() {
     delete dbApi;
