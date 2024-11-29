@@ -35,6 +35,7 @@ class DBManager {
    private:
     const std::string database_path;
 
+    void printRecords(const std::vector<std::vector<std::string>>& records);
     std::string getFilePath(const std::string& file_name) const;
     std::unordered_map<std::string, int> getTableAttributesMap(
         const std::string& table_name);

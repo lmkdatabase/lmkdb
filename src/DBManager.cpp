@@ -20,6 +20,16 @@ string DBManager::getFilePath(const string& file_name) const {
     return database_path + "/" + file_name + ".txt";
 }
 
+void DBManager::printRecords(const vector<vector<string>>& records) {
+    for (const auto& record : records) {
+        for (size_t i = 0; i < record.size(); ++i) {
+            cout << record[i];
+            if (i < record.size() - 1) cout << ", ";
+        }
+        cout << endl;
+    }
+}
+
 unordered_map<string, int> DBManager::getTableAttributesMap(
     const string& table_name) {
     string mappingFilePath = getFilePath(table_name + "_mapping");
@@ -431,13 +441,7 @@ bool DBManager::joinTables(const vector<string>& tables,
         join_table = joined_table_name;
     }
 
-    for (const auto& record : record_map[join_table]) {
-        for (size_t i = 0; i < record.size(); ++i) {
-            cout << record[i];
-            if (i < record.size() - 1) cout << ", ";
-        }
-        cout << endl;
-    }
+    printRecords(record_map[join_table]);
 
     return true;
 }
