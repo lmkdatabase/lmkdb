@@ -19,10 +19,6 @@ file(GLOB_RECURSE HEADER_FILES include/*.h)
 set(SOURCE_NON_MAIN ${SOURCE_FILES})
 list(FILTER SOURCE_NON_MAIN EXCLUDE REGEX "src/main.cpp$")
 
-# Enable necessary policies
-cmake_policy(SET CMP0144 NEW) # Find package uses upper-case <PACKAGENAME>_ROOT
-cmake_policy(SET CMP0167 NEW) # Use modern Boost CMake package
-
 # Boost library 
 find_package(Boost REQUIRED COMPONENTS filesystem) # Find and link Boost
 
