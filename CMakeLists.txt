@@ -41,18 +41,30 @@ set(READLINE_ROOT "$ENV{HOME}/readline" CACHE PATH "Path to locally installed Re
 find_path(READLINE_INCLUDE_DIR readline/readline.h PATHS ${READLINE_ROOT}/include)
 find_library(READLINE_LIBRARY readline PATHS ${READLINE_ROOT}/lib)
 
-add_executable(lmkdb ${SOURCE_FILES}) # Add executable
-target_link_libraries(lmkdb PUBLIC Boost::filesystem) # Link Boost libraries
-target_include_directories(lmkdb PUBLIC ${INCLUDE_PATHS} ${Boost_INCLUDE_DIRS}) # Include directories for the target
-
 if (READLINE_INCLUDE_DIR AND READLINE_LIBRARY)
     message(STATUS "Readline found: ${READLINE_INCLUDE_DIR}")
     message(STATUS "Readline library found: ${READLINE_LIBRARY}")
-    target_include_directories(lmkdb PRIVATE ${READLINE_INCLUDE_DIR})
-    target_link_libraries(lmkdb PRIVATE ${READLINE_LIBRARY})
 else()
     message(FATAL_ERROR "Readline not found! Set READLINE_ROOT to the installation directory.")
 endif()
+
+# Find Threads
+find_package(Threads REQUIRED)
+
+# Add the main executable
+add_executable(lmkdb ${SOURCE_FILES})
+target_link_libraries(lmkdb
+    PUBLIC
+        Boost::filesystem
+        Threads::Threads
+        ${READLINE_LIBRARY}
+)
+target_include_directories(lmkdb
+    PUBLIC
+        ${INCLUDE_PATHS}
+        ${Boost_INCLUDE_DIRS}
+        ${READLINE_INCLUDE_DIR}
+)
 
 # Add stricter warning options (optional)
 target_compile_options(lmkdb PRIVATE -Wall -Wextra -Wpedantic)
