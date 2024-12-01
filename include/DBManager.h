@@ -36,6 +36,18 @@ class DBManager {
     const std::string database_path;
 
     void printRecords(const std::vector<std::vector<std::string>>& records);
+
+    std::vector<std::vector<std::string>> joinRecords(
+        const std::vector<std::vector<std::string>>& left_records,
+        const std::vector<std::vector<std::string>>& right_records,
+        int left_index, int right_index);
+
+    std::unordered_map<std::string, int> createJoinAttributeMap(
+        const std::unordered_map<std::string, int>& left_attributes,
+        const std::unordered_map<std::string, int>& right_attributes,
+        const std::string& left_table_name,
+        const std::string& right_table_name);
+
     std::string getFilePath(const std::string& file_name) const;
     std::unordered_map<std::string, int> getTableAttributesMap(
         const std::string& table_name);
