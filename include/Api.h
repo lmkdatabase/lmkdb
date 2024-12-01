@@ -21,6 +21,7 @@ class DatabaseAPI {
                 const std::vector<std::string>& tokens);
     void updateOp(const std::string& tableName, const int& recordId,
                   const std::vector<std::string>& updatedRecord);
+    void joinOp(const std::vector<std::string>& query);
 
    private:
     std::unique_ptr<DBManager> dbManager;

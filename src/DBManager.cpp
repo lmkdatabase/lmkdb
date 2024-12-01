@@ -1,10 +1,12 @@
 #include "DBManager.h"
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace fs = boost::filesystem;
 using namespace std;
@@ -17,6 +19,16 @@ DBManager::~DBManager() = default;
 
 string DBManager::getFilePath(const string& file_name) const {
     return database_path + "/" + file_name + ".txt";
+}
+
+void DBManager::printRecords(const vector<vector<string>>& records) {
+    for (const auto& record : records) {
+        for (size_t i = 0; i < record.size(); ++i) {
+            cout << record[i];
+            if (i < record.size() - 1) cout << ", ";
+        }
+        cout << endl;
+    }
 }
 
 unordered_map<string, int> DBManager::getTableAttributesMap(
@@ -360,5 +372,96 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
     }
 
     file.close();
+    return true;
+}
+
+vector<vector<string>> DBManager::joinRecords(
+    const vector<vector<string>>& left_records,
+    const vector<vector<string>>& right_records, int left_index,
+    int right_index) {
+    vector<vector<string>> result;
+
+    // Join is performed here
+    for (const auto& left_row : left_records) {
+        for (const auto& right_row : right_records) {
+            if (left_row[left_index] == right_row[right_index]) {
+                vector<string> combined_row = left_row;
+                combined_row.insert(combined_row.end(), right_row.begin(),
+                                    right_row.end());
+                result.push_back(combined_row);
+            }
+        }
+    }
+
+    return result;
+}
+
+unordered_map<string, int> DBManager::createJoinAttributeMap(
+    const unordered_map<string, int>& left_attributes,
+    const unordered_map<string, int>& right_attributes,
+    const string& left_table_name, const string& right_table_name) {
+    unordered_map<string, int> new_attr_map;
+    int col_idx = 0;
+
+    for (const auto& [attr, idx] : left_attributes) {
+        new_attr_map[left_table_name + "." + attr] = col_idx++;
+    }
+
+    for (const auto& [attr, idx] : right_attributes) {
+        new_attr_map[right_table_name + "." + attr] = col_idx++;
+    }
+    return new_attr_map;
+}
+
+bool DBManager::joinTables(const vector<string>& tables,
+                           unordered_map<string, string>& attrMap) {
+    unordered_map<string, vector<vector<string>>> record_map;
+    unordered_map<string, unordered_map<string, int>> attr_maps;
+
+    for (const auto& [table, attr] : attrMap) {
+        string table_path = getFilePath(table);
+
+        if (!fs::exists(table_path)) {
+            cerr << "Table does not exist: " << table << endl;
+            return false;
+        }
+
+        record_map[table] = readAllRecords(table);
+        attr_maps[table] = getTableAttributesMap(table);
+    }
+
+    size_t idx = 0;
+    string join_table = tables[idx];
+
+    while (idx < tables.size() - 1) {
+        const string& right_table = tables[idx + 1];
+
+        vector<vector<string>> join_records = record_map[join_table];
+        vector<vector<string>> right_records = record_map[right_table];
+
+        auto& join_attr_map = attr_maps[join_table];
+        auto& right_attr_map = attr_maps[right_table];
+
+        int join_index = join_attr_map[attrMap[join_table]];
+        int right_index = right_attr_map[attrMap[right_table]];
+
+        // Create new attribute map for joined result
+        unordered_map<string, int> new_attr_map = createJoinAttributeMap(
+            join_attr_map, right_attr_map, join_table, right_table);
+
+        vector<vector<string>> result =
+            joinRecords(join_records, right_records, join_index, right_index);
+
+        // Update values for next iteration
+        string joined_table_name = join_table + "_" + right_table;
+        record_map[joined_table_name] = result;
+        attr_maps[joined_table_name] = new_attr_map;
+
+        idx++;
+        join_table = joined_table_name;
+    }
+
+    printRecords(record_map[join_table]);
+
     return true;
 }

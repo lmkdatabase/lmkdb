@@ -1,6 +1,7 @@
 #include "Api.h"
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 
 using namespace std;
 
@@ -211,4 +212,26 @@ void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
     } else {
         cout << "Failed to update record in table: " << tableName << endl;
     }
+}
+
+void DatabaseAPI::joinOp(const vector<string> &query) {
+    unordered_map<string, string> attrMap;
+    vector<string> tables;
+
+    for (const auto &token : query) {
+        size_t pos = token.find('.');
+
+        if (pos != string::npos) {
+            string key = token.substr(0, pos);
+            string value = token.substr(pos + 1);
+
+            attrMap[key] = value;
+            tables.push_back(key);
+        } else {
+            cerr << "Invalid token: " << token << endl;
+            return;
+        }
+    }
+
+    dbManager->joinTables(tables, attrMap);
 }

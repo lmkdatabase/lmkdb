@@ -18,9 +18,9 @@ bool Interpreter::validateInteger(const string &input) {
     try {
         stoi(input);
         return true;
-    } catch (const std::invalid_argument &) {
+    } catch (const invalid_argument &) {
         return false;
-    } catch (const std::out_of_range &) {
+    } catch (const out_of_range &) {
         return false;
     }
 }
@@ -76,6 +76,11 @@ void Interpreter::processCommand(const string &command) {
         vector<string> attr(tokens.begin() + 2, tokens.end());
 
         dbApi->readOp(tableName, attr);
+
+    } else if (operation == "join" && tokens.size() >= 3) {
+        vector<string> query(tokens.begin() + 1, tokens.end());
+
+        dbApi->joinOp(query);
 
     } else if (operation == "help") {
         printUsage();
