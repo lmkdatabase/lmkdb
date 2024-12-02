@@ -107,25 +107,24 @@ bool DBManager::createTable(const string& table_name,
     return true;
 }
 
-bool DBManager::deleteByIndex(const std::string& table_name, const int& id,
-                              const std::vector<std::string>& attributes) {
-    std::string table_file = getFilePath(table_name);
+bool DBManager::deleteByIndex(const string& table_name, const int& id,
+                              const vector<string>& attributes) {
+    string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
-        std::cerr << "Table does not exist: " << table_name << std::endl;
+        cerr << "Table does not exist: " << table_name << endl;
         return false;
     }
 
-    std::vector<std::vector<std::string>> records = readAllRecords(table_name);
+    vector<vector<string>> records = readAllRecords(table_name);
     if (id < 0 || id >= static_cast<int>(records.size())) {
-        std::cerr << "Index out of bounds: " << id << std::endl;
+        cerr << "Index out of bounds: " << id << endl;
         return false;
     }
 
-    std::unordered_map<std::string, int> tableAttrMap =
-        getTableAttributesMap(table_name);
+    unordered_map<string, int> tableAttrMap = getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        std::cerr << "Failed to retrieve attribute mapping for table: "
-                  << table_name << std::endl;
+        cerr << "Failed to retrieve attribute mapping for table: " << table_name
+             << endl;
         return false;
     }
 
@@ -137,15 +136,15 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id,
                 int attrIndex = tableAttrMap[attr];
                 records[id][attrIndex] = "NULL";
             } else {
-                std::cerr << "Unknown attribute: " << attr << std::endl;
+                cerr << "Unknown attribute: " << attr << endl;
                 return false;
             }
         }
     }
 
-    std::ofstream file(table_file, std::ios::trunc);
+    ofstream file(table_file, ios::trunc);
     if (!file.is_open()) {
-        std::cerr << "Failed to write to table: " << table_name << std::endl;
+        cerr << "Failed to write to table: " << table_name << endl;
         return false;
     }
 
@@ -162,30 +161,28 @@ bool DBManager::deleteByIndex(const std::string& table_name, const int& id,
 }
 
 bool DBManager::deleteByAttributes(
-    const std::string& table_name,
-    const std::unordered_map<std::string, std::string>& attrMap) {
-    std::string table_file = getFilePath(table_name);
+    const string& table_name, const unordered_map<string, string>& attrMap) {
+    string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
-        std::cerr << "Table does not exist: " << table_name << std::endl;
+        cerr << "Table does not exist: " << table_name << endl;
         return false;
     }
 
-    std::vector<std::vector<std::string>> records = readAllRecords(table_name);
-    std::unordered_map<std::string, int> tableAttrMap =
-        getTableAttributesMap(table_name);
+    vector<vector<string>> records = readAllRecords(table_name);
+    unordered_map<string, int> tableAttrMap = getTableAttributesMap(table_name);
     if (tableAttrMap.empty()) {
-        std::cerr << "Failed to retrieve attribute mapping for table: "
-                  << table_name << std::endl;
+        cerr << "Failed to retrieve attribute mapping for table: " << table_name
+             << endl;
         return false;
     }
 
-    std::vector<std::vector<std::string>> updatedRecords;
+    vector<vector<string>> updatedRecords;
     for (const auto& record : records) {
         bool match = true;
 
         for (const auto& [key, value] : attrMap) {
             if (tableAttrMap.find(key) == tableAttrMap.end()) {
-                std::cerr << "Unknown attribute: " << key << std::endl;
+                cerr << "Unknown attribute: " << key << endl;
                 return false;
             }
 
@@ -201,9 +198,9 @@ bool DBManager::deleteByAttributes(
         }
     }
 
-    std::ofstream file(table_file, std::ios::trunc);
+    ofstream file(table_file, ios::trunc);
     if (!file.is_open()) {
-        std::cerr << "Failed to write to table: " << table_name << std::endl;
+        cerr << "Failed to write to table: " << table_name << endl;
         return false;
     }
 
@@ -219,30 +216,29 @@ bool DBManager::deleteByAttributes(
     return true;
 }
 
-bool DBManager::deleteTable(const std::string& table_name) {
-    std::string table_file = getFilePath(table_name);
-    std::string attr_mapping = getFilePath(table_name + "_mapping");
+bool DBManager::deleteTable(const string& table_name) {
+    string table_file = getFilePath(table_name);
+    string attr_mapping = getFilePath(table_name + "_mapping");
 
     if (!fs::exists(table_file)) {
-        std::cerr << "Table does not exist: " << table_name << std::endl;
+        cerr << "Table does not exist: " << table_name << endl;
         return false;
     }
 
     if (!fs::remove(table_file)) {
-        std::cerr << "Failed to delete table file: " << table_file << std::endl;
+        cerr << "Failed to delete table file: " << table_file << endl;
         return false;
     }
 
     if (fs::exists(attr_mapping)) {
         if (!fs::remove(attr_mapping)) {
-            std::cerr << "Failed to delete attribute mapping file: "
-                      << attr_mapping << std::endl;
+            cerr << "Failed to delete attribute mapping file: " << attr_mapping
+                 << endl;
             return false;
         }
     }
 
-    std::cout << "Table and mapping deleted successfully: " << table_name
-              << std::endl;
+    cout << "Table and mapping deleted successfully: " << table_name << endl;
     return true;
 }
 
