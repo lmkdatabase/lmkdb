@@ -20,10 +20,10 @@ class DBManager {
     std::vector<std::vector<std::string>> readAllRecords(
         const std::string& table_name);
     bool updateRecord(
-        const std::string& table_name, const int& id,
+        const std::string& table_name, size_t id,
         const std::unordered_map<std::string, std::string>& attrMap);
 
-    bool deleteByIndex(const std::string& table_name, const int& id,
+    bool deleteByIndex(const std::string& table_name, size_t id,
                        const std::vector<std::string>& attributes);
     bool deleteByAttributes(
         const std::string& table_name,

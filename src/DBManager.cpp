@@ -107,7 +107,7 @@ bool DBManager::createTable(const string& table_name,
     return true;
 }
 
-bool DBManager::deleteByIndex(const string& table_name, const int& id,
+bool DBManager::deleteByIndex(const string& table_name, size_t id,
                               const vector<string>& attributes) {
     string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
@@ -116,7 +116,7 @@ bool DBManager::deleteByIndex(const string& table_name, const int& id,
     }
 
     vector<vector<string>> records = readAllRecords(table_name);
-    if (id < 0 || id >= static_cast<int>(records.size())) {
+    if (id < 0 || id >= records.size()) {
         cerr << "Index out of bounds: " << id << endl;
         return false;
     }
@@ -318,7 +318,7 @@ vector<vector<string>> DBManager::readAllRecords(const string& table_name) {
     return records;
 }
 
-bool DBManager::updateRecord(const string& table_name, const int& id,
+bool DBManager::updateRecord(const string& table_name, size_t id,
                              const unordered_map<string, string>& attrMap) {
     string table_file = getFilePath(table_name);
     if (!fs::exists(table_file)) {
@@ -327,7 +327,7 @@ bool DBManager::updateRecord(const string& table_name, const int& id,
     }
 
     vector<vector<string>> records = readAllRecords(table_name);
-    if (id < 0 || id >= (int)records.size()) {
+    if (id < 0 || id >= records.size()) {
         cerr << "Record ID out of bounds: " << id << endl;
         return false;
     }

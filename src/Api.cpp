@@ -189,7 +189,7 @@ void DatabaseAPI::readOp(const string &tableName,
     cerr << "Error: Too many arguments provided for read operation." << endl;
 }
 
-void DatabaseAPI::updateOp(const string &tableName, const int &recordId,
+void DatabaseAPI::updateOp(const string &tableName, size_t recordId,
                            const vector<string> &updatedRecord) {
     unordered_map<string, string> mp;
 
