@@ -118,20 +118,6 @@ bool DBManager::insertRecord(const string& table_name,
     return true;
 }
 
-/* string DBManager::getFilePath(const string& file_name) const { */
-/*     return database_path + "/" + file_name + ".txt"; */
-/* } */
-/**/
-/* void DBManager::printRecords(const vector<vector<string>>& records) { */
-/*     for (const auto& record : records) { */
-/*         for (size_t i = 0; i < record.size(); ++i) { */
-/*             cout << record[i]; */
-/*             if (i < record.size() - 1) cout << ", "; */
-/*         } */
-/*         cout << endl; */
-/*     } */
-/* } */
-
 unordered_map<string, int> DBManager::getMetadata(const string& table_name) {
     string mappingFilePath = getMetadataPath(table_name);
 
@@ -165,6 +151,38 @@ unordered_map<string, int> DBManager::getMetadata(const string& table_name) {
     }
 
     return attributes_map;
+}
+
+void DBManager::readTable(const string& table_name) {
+    if (!fs::exists(getTablePath(table_name))) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return;
+    }
+
+    vector<string> shards = getShardPaths(table_name);
+
+    if (shards.empty()) {
+        cerr << "Table is empty: " << table_name << endl;
+        return;
+    }
+
+    for (const auto& shard : shards) {
+        ifstream file(shard);
+        string line;
+
+        while (getline(file, line)) {
+            istringstream ss(line);
+            string field;
+            bool first = true;
+
+            while (getline(ss, field, ',')) {
+                if (!first) cout << ",";
+                cout << field;
+                first = false;
+            }
+            cout << endl;
+        }
+    }
 }
 
 bool DBManager::deleteByIndex(const string& table_name, size_t id,
@@ -306,37 +324,37 @@ bool DBManager::deleteTable(const string& table_name) {
     return true;
 }
 
-vector<vector<string>> DBManager::readAllRecords(const string& table_name) {
-    /* string table_file = getFilePath(table_name); */
-    vector<vector<string>> records = {};
-    /**/
-    /* if (!fs::exists(table_file)) { */
-    /*     cerr << "Table does not exist: " << table_name << endl; */
-    /*     return records; */
-    /* } */
-    /**/
-    /* ifstream file(table_file); */
-    /* if (!file.is_open()) { */
-    /*     cerr << "Failed to read records from table: " << table_name << endl;
-     */
-    /*     return records; */
-    /* } */
-    /**/
-    /* string line; */
-    /* while (getline(file, line)) { */
-    /*     istringstream stream(line); */
-    /*     string field; */
-    /*     vector<string> record; */
-    /**/
-    /*     while (getline(stream, field, ',')) { */
-    /*         record.push_back(field); */
-    /*     } */
-    /*     records.push_back(record); */
-    /* } */
-    /**/
-    /* file.close(); */
-    return records;
-}
+/* vector<vector<string>> DBManager::readTable(const string& table_name) { */
+/* string table_file = getFilePath(table_name); */
+/* vector<vector<string>> records = {}; */
+/**/
+/* if (!fs::exists(table_file)) { */
+/*     cerr << "Table does not exist: " << table_name << endl; */
+/*     return records; */
+/* } */
+/**/
+/* ifstream file(table_file); */
+/* if (!file.is_open()) { */
+/*     cerr << "Failed to read records from table: " << table_name << endl;
+ */
+/*     return records; */
+/* } */
+/**/
+/* string line; */
+/* while (getline(file, line)) { */
+/*     istringstream stream(line); */
+/*     string field; */
+/*     vector<string> record; */
+/**/
+/*     while (getline(stream, field, ',')) { */
+/*         record.push_back(field); */
+/*     } */
+/*     records.push_back(record); */
+/* } */
+/**/
+/* file.close(); */
+/* return records; */
+/* } */
 
 bool DBManager::updateRecord(const string& table_name, size_t id,
                              const unordered_map<string, string>& attrMap) {

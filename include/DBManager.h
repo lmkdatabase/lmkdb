@@ -17,8 +17,7 @@ class DBManager {
     bool insertRecord(
         const std::string& table_name,
         const std::unordered_map<std::string, std::string>& attrMap);
-    std::vector<std::vector<std::string>> readAllRecords(
-        const std::string& table_name);
+    void readTable(const std::string& table_name);
     bool updateRecord(
         const std::string& table_name, size_t id,
         const std::unordered_map<std::string, std::string>& attrMap);
