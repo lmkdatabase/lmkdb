@@ -4,6 +4,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -20,7 +21,7 @@ DBManager::DBManager(string dbPath) : database_path(std::move(dbPath)) {
 DBManager::~DBManager() = default;
 
 string DBManager::getTablePath(const string& table_name) const {
-    return database_path + "/" + table_name;
+    return database_path + table_name;
 }
 
 string DBManager::getShardPath(const string& table_name,
@@ -196,6 +197,86 @@ void DBManager::readTable(const string& table_name,
     }
 }
 
+ShardLocation DBManager::findShardForUpdate(const string& table_name,
+                                            size_t target_idx) {
+    size_t idx = 0;
+    for (const auto& shard : getShardPaths(table_name)) {
+        ifstream file(shard);
+        size_t shard_records = count(istreambuf_iterator<char>(file),
+                                     istreambuf_iterator<char>(), '\n');
+
+        if (idx + shard_records > target_idx) {
+            return {.shard_path = shard, .record_index = target_idx - idx};
+        }
+        idx += shard_records;
+    }
+    return {.shard_path = "", .record_index = 0};
+}
+
+bool DBManager::updateShardRecord(
+    const string& table_name, const string& shard_path, size_t target_idx,
+    const unordered_map<string, string>& updates) {
+    auto metadata = getMetadata(table_name);
+
+    for (const auto& [attr, _] : updates) {
+        if (metadata.find(attr) == metadata.end()) {
+            cerr << "Invalid attribute: " << attr << endl;
+            return false;
+        }
+    }
+
+    string tmp_file = shard_path + ".tmp";
+
+    ifstream in_file(shard_path);
+    ofstream out_file(tmp_file);
+
+    string line;
+    size_t current_idx = 0;
+
+    while (getline(in_file, line)) {
+        if (current_idx != target_idx) {
+            out_file << line << "\n";
+        } else {
+            vector<string> record{};
+
+            istringstream ss(line);
+            string field;
+
+            while (getline(ss, field, ',')) {
+                record.push_back(field);
+            }
+
+            for (const auto& [attr, value] : updates) {
+                record[metadata.at(attr)] = value;
+            }
+
+            bool first = true;
+            for (const auto& field : record) {
+                if (!first) out_file << ",";
+                out_file << field;
+                first = false;
+            }
+            out_file << "\n";
+        }
+        current_idx++;
+    }
+
+    fs::rename(tmp_file, shard_path);
+    return true;
+}
+
+bool DBManager::updateRecord(const string& table_name, size_t id,
+                             const unordered_map<string, string>& attrMap) {
+    auto location = findShardForUpdate(table_name, id);
+
+    if (location.shard_path.empty()) {
+        return false;
+    }
+
+    return updateShardRecord(table_name, location.shard_path,
+                             location.record_index, attrMap);
+}
+
 bool DBManager::deleteByIndex(const string& table_name, size_t id,
                               const vector<string>& attributes) {
     /* string table_file = getFilePath(table_name); */
@@ -367,60 +448,61 @@ bool DBManager::deleteTable(const string& table_name) {
 /* return records; */
 /* } */
 
-bool DBManager::updateRecord(const string& table_name, size_t id,
-                             const unordered_map<string, string>& attrMap) {
-    /* string table_file = getFilePath(table_name); */
-    /* if (!fs::exists(table_file)) { */
-    /*     cerr << "Table does not exist: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* vector<vector<string>> records = readAllRecords(table_name); */
-    /* if (id < 0 || id >= records.size()) { */
-    /*     cerr << "Record ID out of bounds: " << id << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* unordered_map<string, int> tableAttrMap = getMetadata(table_name); */
-    /* if (tableAttrMap.empty()) { */
-    /*     cerr << "Failed to retrieve attribute mapping for table: " <<
-     * table_name */
-    /*          << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* vector<string> updatedRecord = records[id]; */
-    /**/
-    /* for (const auto& [attr, val] : attrMap) { */
-    /*     if (tableAttrMap.find(attr) != tableAttrMap.end()) { */
-    /*         updatedRecord[tableAttrMap[attr]] = val; */
-    /*     } else { */
-    /*         cerr << "Unknown attribute: " << attr */
-    /*              << " for table: " << table_name << endl; */
-    /*         return false; */
-    /*     } */
-    /* } */
-    /**/
-    /* records[id] = updatedRecord; */
-    /**/
-    /* ofstream file(table_file, ios::trunc); */
-    /* if (!file.is_open()) { */
-    /*     cerr << "Failed to update record in table: " << table_name << endl;
-     */
-    /*     return false; */
-    /* } */
-    /**/
-    /* for (const auto& record : records) { */
-    /*     for (size_t i = 0; i < record.size(); ++i) { */
-    /*         file << record[i]; */
-    /*         if (i < record.size() - 1) file << ","; */
-    /*     } */
-    /*     file << "\n"; */
-    /* } */
-    /**/
-    /* file.close(); */
-    return true;
-}
+/* bool DBManager::updateRecord(const string& table_name, size_t id, */
+/*                              const unordered_map<string, string>& attrMap) {
+ */
+/* string table_file = getFilePath(table_name); */
+/* if (!fs::exists(table_file)) { */
+/*     cerr << "Table does not exist: " << table_name << endl; */
+/*     return false; */
+/* } */
+/**/
+/* vector<vector<string>> records = readAllRecords(table_name); */
+/* if (id < 0 || id >= records.size()) { */
+/*     cerr << "Record ID out of bounds: " << id << endl; */
+/*     return false; */
+/* } */
+/**/
+/* unordered_map<string, int> tableAttrMap = getMetadata(table_name); */
+/* if (tableAttrMap.empty()) { */
+/*     cerr << "Failed to retrieve attribute mapping for table: " <<
+ * table_name */
+/*          << endl; */
+/*     return false; */
+/* } */
+/**/
+/* vector<string> updatedRecord = records[id]; */
+/**/
+/* for (const auto& [attr, val] : attrMap) { */
+/*     if (tableAttrMap.find(attr) != tableAttrMap.end()) { */
+/*         updatedRecord[tableAttrMap[attr]] = val; */
+/*     } else { */
+/*         cerr << "Unknown attribute: " << attr */
+/*              << " for table: " << table_name << endl; */
+/*         return false; */
+/*     } */
+/* } */
+/**/
+/* records[id] = updatedRecord; */
+/**/
+/* ofstream file(table_file, ios::trunc); */
+/* if (!file.is_open()) { */
+/*     cerr << "Failed to update record in table: " << table_name << endl;
+ */
+/*     return false; */
+/* } */
+/**/
+/* for (const auto& record : records) { */
+/*     for (size_t i = 0; i < record.size(); ++i) { */
+/*         file << record[i]; */
+/*         if (i < record.size() - 1) file << ","; */
+/*     } */
+/*     file << "\n"; */
+/* } */
+/**/
+/* file.close(); */
+/*     return true; */
+/* } */
 
 vector<vector<string>> DBManager::joinRecords(
     const vector<vector<string>>& left_records,

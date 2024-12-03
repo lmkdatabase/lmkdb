@@ -5,6 +5,11 @@
 #include <unordered_map>
 #include <vector>
 
+struct ShardLocation {
+    std::string shard_path;
+    size_t record_index;
+};
+
 class DBManager {
    public:
     DBManager(std::string dbPath);
@@ -40,9 +45,16 @@ class DBManager {
     std::string getShardPath(const std::string& table_name,
                              size_t shard_num) const;
     std::vector<std::string> getShardPaths(const std::string& table_name);
+    ShardLocation findShardForUpdate(const std::string& table_name,
+                                     size_t target_idx);
     std::string getTargetShard(const std::string& table_name);
 
     std::string getMetadataPath(const std::string& table_name) const;
+
+    bool updateShardRecord(
+        const std::string& table_name, const std::string& shard_path,
+        size_t target_idx,
+        const std::unordered_map<std::string, std::string>& updates);
 
     void printRecords(const std::vector<std::vector<std::string>>& records);
 
