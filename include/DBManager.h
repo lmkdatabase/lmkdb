@@ -34,6 +34,15 @@ class DBManager {
 
    private:
     const std::string database_path;
+    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+
+    std::string getTablePath(const std::string& table_name) const;
+    std::string getShardPath(const std::string& table_name,
+                             size_t shard_num) const;
+    std::vector<std::string> getShardPaths(const std::string& table_name);
+    std::string getTargetShard(const std::string& table_name);
+
+    std::string getMetadataPath(const std::string& table_name) const;
 
     void printRecords(const std::vector<std::vector<std::string>>& records);
 
@@ -49,7 +58,7 @@ class DBManager {
         const std::string& right_table_name);
 
     std::string getFilePath(const std::string& file_name) const;
-    std::unordered_map<std::string, int> getTableAttributesMap(
+    std::unordered_map<std::string, int> getMetadata(
         const std::string& table_name);
 };
 
