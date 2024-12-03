@@ -1,4 +1,5 @@
 #include "DBManager.h"
+#include <algorithm>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <fstream>
@@ -153,7 +154,8 @@ unordered_map<string, int> DBManager::getMetadata(const string& table_name) {
     return attributes_map;
 }
 
-void DBManager::readTable(const string& table_name) {
+void DBManager::readTable(const string& table_name,
+                          const vector<int>& line_numbers) {
     if (!fs::exists(getTablePath(table_name))) {
         cerr << "Table does not exist: " << table_name << endl;
         return;
@@ -166,6 +168,8 @@ void DBManager::readTable(const string& table_name) {
         return;
     }
 
+    int index = 0;
+
     for (const auto& shard : shards) {
         ifstream file(shard);
         string line;
@@ -175,12 +179,19 @@ void DBManager::readTable(const string& table_name) {
             string field;
             bool first = true;
 
+            if (!line_numbers.empty() &&
+                ranges::find(line_numbers, index) == line_numbers.end()) {
+                index++;
+                continue;
+            }
+
             while (getline(ss, field, ',')) {
                 if (!first) cout << ",";
                 cout << field;
                 first = false;
             }
             cout << endl;
+            index++;
         }
     }
 }
