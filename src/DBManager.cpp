@@ -1,7 +1,6 @@
 #include "DBManager.h"
 #include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -13,7 +12,7 @@
 #include <vector>
 #include "worker.h"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace std;
 
 DBManager::DBManager(string dbPath) : database_path(std::move(dbPath)) {

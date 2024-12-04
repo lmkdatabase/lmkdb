@@ -1,6 +1,5 @@
 #include "worker.h"
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>

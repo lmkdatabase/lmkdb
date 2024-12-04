@@ -1,5 +1,6 @@
 #include "Interpreter.h"
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -39,7 +40,8 @@ void Interpreter::processCommand(const string &command) {
         return;
     }
 
-    boost::algorithm::to_lower(tokens[0]);
+    transform(tokens[0].begin(), tokens[0].end(), tokens[0].begin(),
+              [](unsigned char c) { return std::tolower(c); });
 
     string operation = tokens[0];
 
