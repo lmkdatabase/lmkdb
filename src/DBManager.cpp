@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "worker.h"
 
 namespace fs = boost::filesystem;
 using namespace std;
@@ -507,128 +508,47 @@ bool DBManager::deleteTable(const string& table_name) {
 
 bool DBManager::joinTables(const vector<string>& tables,
                            unordered_map<string, string>& attrMap) {
-    // Validate tables and get metadata first
-    unordered_map<string, unordered_map<string, int>> attr_maps;
-    for (const auto& [table, attr] : attrMap) {
-        if (!fs::exists(getTablePath(table))) {
-            cerr << "Table does not exist: " << table << endl;
-            return false;
+    constexpr size_t MAX_THREADS = 8;
+
+    // Get all shards for both tables
+    vector<string> shards_A = getShardPaths(tables[0]);
+    vector<string> shards_B = getShardPaths(tables[1]);
+
+    // Get join attribute positions
+    auto metadata_A = getMetadata(tables[0]);
+    auto metadata_B = getMetadata(tables[1]);
+    int attr_pos_A = metadata_A[attrMap[tables[0]]];
+    int attr_pos_B = metadata_B[attrMap[tables[1]]];
+
+    // Process shards in batches
+    vector<thread> workers;
+    for (size_t i = 0; i < shards_A.size(); i += MAX_THREADS) {
+        // Clear previous workers
+        for (auto& worker : workers) {
+            worker.join();
         }
-        attr_maps[table] = getMetadata(table);
-        if (attr_maps[table].find(attr) == attr_maps[table].end()) {
-            cerr << "Invalid attribute: " << attr << " for table: " << table
-                 << endl;
-            return false;
+        workers.clear();
+
+        // Create new batch of workers
+        size_t batch_end = min(i + MAX_THREADS, shards_A.size());
+        vector<string> current_batch(shards_A.begin() + i,
+                                     shards_A.begin() + batch_end);
+
+        for (size_t j = 0; j < current_batch.size(); j++) {
+            workers.emplace_back([&, j]() {
+                string output_file =
+                    getTablePath(tables[0]) + "/join_" + to_string(j) + ".csv";
+                JoinWorker worker(output_file, attr_pos_A);
+                worker.processShardBatch({current_batch[j]}, shards_B,
+                                         attr_pos_A, attr_pos_B);
+            });
         }
     }
 
-    string current_table = tables[0];
-    fs::path temp_result = getTablePath(current_table) + "/temp_join.csv";
-
-    // Process each join one at a time
-    for (size_t i = 1; i < tables.size(); i++) {
-        string next_table = tables[i];
-        fs::path new_temp =
-            getTablePath(next_table) + "/temp_join_" + to_string(i) + ".csv";
-
-        // Get attribute positions for join
-        int attr1_pos = attr_maps[current_table][attrMap[current_table]];
-        int attr2_pos = attr_maps[next_table][attrMap[next_table]];
-
-        // Get shards for both tables
-        vector<string> shards1;
-        if (i == 1) {
-            shards1 = getShardPaths(current_table);
-        } else {
-            shards1 = {temp_result.string()};
-        }
-        vector<string> shards2 = getShardPaths(next_table);
-
-        ofstream result_file(new_temp.string());
-        mutex write_mutex;
-
-        // Process each shard of the first table
-        for (const auto& shard1 : shards1) {
-            ifstream file1(shard1);
-            string line1;
-
-            while (getline(file1, line1)) {
-                vector<string> record1;
-                istringstream ss1(line1);
-                string field;
-                while (getline(ss1, field, ',')) {
-                    record1.push_back(field);
-                }
-
-                string join_value = record1[attr1_pos];
-
-                // For each matching record in second table's shards, output
-                // joined record
-                vector<thread> shard_workers;
-                for (const auto& shard2 : shards2) {
-                    shard_workers.emplace_back([&, shard2]() {
-                        ifstream file2(shard2);
-                        string line2;
-                        vector<string> temp_matches;
-
-                        while (getline(file2, line2)) {
-                            vector<string> record2;
-                            istringstream ss2(line2);
-                            string field2;
-                            while (getline(ss2, field2, ',')) {
-                                record2.push_back(field2);
-                            }
-
-                            if (record2[attr2_pos] == join_value) {
-                                string joined_record;
-                                for (const auto& field : record1) {
-                                    joined_record += field + ",";
-                                }
-                                for (size_t j = 0; j < record2.size(); j++) {
-                                    joined_record += record2[j];
-                                    if (j < record2.size() - 1)
-                                        joined_record += ",";
-                                }
-                                temp_matches.push_back(joined_record);
-                            }
-                        }
-
-                        // Write matches in one batch with lock
-                        if (!temp_matches.empty()) {
-                            lock_guard<mutex> lock(write_mutex);
-                            for (const auto& match : temp_matches) {
-                                result_file << match << "\n";
-                            }
-                        }
-                    });
-                }
-
-                // Wait for all shard processes to complete
-                for (auto& worker : shard_workers) {
-                    worker.join();
-                }
-            }
-        }
-
-        result_file.close();
-
-        // Clean up previous temp file if it exists
-        if (i > 1) {
-            fs::remove(temp_result);
-        }
-        temp_result = new_temp;
-        current_table = next_table;
+    // Wait for final batch
+    for (auto& worker : workers) {
+        worker.join();
     }
-
-    // Output final results
-    ifstream final_result(temp_result.string());
-    string line;
-    while (getline(final_result, line)) {
-        cout << line << endl;
-    }
-
-    // Clean up final temp file
-    fs::remove(temp_result);
 
     return true;
 }
