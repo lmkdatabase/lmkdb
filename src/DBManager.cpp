@@ -279,8 +279,7 @@ bool DBManager::updateRecord(const string& table_name, size_t id,
                              location.record_index, attrMap);
 }
 
-bool DBManager::deleteByIndex(const string& table_name, size_t id,
-                              const vector<string>& attributes) {
+bool DBManager::deleteByIndex(const string& table_name, size_t id) {
     if (!fs::exists(getTablePath(table_name))) {
         cerr << "Table does not exist: " << table_name << endl;
         return false;
@@ -292,52 +291,15 @@ bool DBManager::deleteByIndex(const string& table_name, size_t id,
         return false;
     }
 
-    auto metadata = getMetadata(table_name);
-    if (metadata.empty()) {
-        cerr << "Failed to retrieve metadata for table: " << table_name << endl;
-        return false;
-    }
-
-    for (const auto& attr : attributes) {
-        if (metadata.find(attr) == metadata.end()) {
-            cerr << "Invalid attribute: " << attr << endl;
-            return false;
-        }
-    }
-
     string tmp_file = location.shard_path + ".tmp";
     ifstream in_file(location.shard_path);
     ofstream out_file(tmp_file);
 
     string line;
     size_t curr_idx = 0;
-
     while (getline(in_file, line)) {
         if (curr_idx != location.record_index) {
             out_file << line << "\n";
-        } else {
-            // Case 2: Set specified attributes to "NULL"
-            if (!attributes.empty()) {
-                vector<string> record;
-                istringstream ss(line);
-                string field;
-
-                while (getline(ss, field, ',')) {
-                    record.push_back(field);
-                }
-
-                for (const auto& attr : attributes) {
-                    record[metadata[attr]] = "NULL";
-                }
-
-                bool first = true;
-                for (const auto& field : record) {
-                    if (!first) out_file << ",";
-                    out_file << field;
-                    first = false;
-                }
-                out_file << "\n";
-            }
         }
         curr_idx++;
     }

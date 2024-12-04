@@ -62,7 +62,13 @@ void DatabaseAPI::deleteOp(const string &tableName,
         }
 
         vector<string> attributes(tokens.begin() + 1, tokens.end());
-        dbManager->deleteByIndex(tableName, stoi(idValue), attributes);
+        unordered_map<string, string> attrMap;
+
+        for (const auto &attr : attributes) {
+            attrMap[attr] = "NULL";
+        }
+
+        dbManager->updateRecord(tableName, stoi(idValue), attrMap);
         return;
     }
 
@@ -80,7 +86,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
             return;
         }
 
-        dbManager->deleteByIndex(tableName, stoi(idValue), {});
+        dbManager->deleteByIndex(tableName, stoi(idValue));
         return;
     }
 
