@@ -48,7 +48,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
         return;
     }
     // Case 1: delete table_name id:2 attr1 attr2 ...
-    if (tokens[0].starts_with("id:")) {
+    if (tokens.size() > 1 && tokens[0].starts_with("id:")) {
         size_t pos = tokens[0].find(':');
         if (pos == string::npos || tokens[0].substr(pos + 1).empty()) {
             cerr << "Error: Invalid format." << endl;
