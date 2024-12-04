@@ -418,94 +418,6 @@ bool DBManager::deleteTable(const string& table_name) {
     return true;
 }
 
-/* vector<vector<string>> DBManager::readTable(const string& table_name) { */
-/* string table_file = getFilePath(table_name); */
-/* vector<vector<string>> records = {}; */
-/**/
-/* if (!fs::exists(table_file)) { */
-/*     cerr << "Table does not exist: " << table_name << endl; */
-/*     return records; */
-/* } */
-/**/
-/* ifstream file(table_file); */
-/* if (!file.is_open()) { */
-/*     cerr << "Failed to read records from table: " << table_name << endl;
- */
-/*     return records; */
-/* } */
-/**/
-/* string line; */
-/* while (getline(file, line)) { */
-/*     istringstream stream(line); */
-/*     string field; */
-/*     vector<string> record; */
-/**/
-/*     while (getline(stream, field, ',')) { */
-/*         record.push_back(field); */
-/*     } */
-/*     records.push_back(record); */
-/* } */
-/**/
-/* file.close(); */
-/* return records; */
-/* } */
-
-/* bool DBManager::updateRecord(const string& table_name, size_t id, */
-/*                              const unordered_map<string, string>& attrMap) {
- */
-/* string table_file = getFilePath(table_name); */
-/* if (!fs::exists(table_file)) { */
-/*     cerr << "Table does not exist: " << table_name << endl; */
-/*     return false; */
-/* } */
-/**/
-/* vector<vector<string>> records = readAllRecords(table_name); */
-/* if (id < 0 || id >= records.size()) { */
-/*     cerr << "Record ID out of bounds: " << id << endl; */
-/*     return false; */
-/* } */
-/**/
-/* unordered_map<string, int> tableAttrMap = getMetadata(table_name); */
-/* if (tableAttrMap.empty()) { */
-/*     cerr << "Failed to retrieve attribute mapping for table: " <<
- * table_name */
-/*          << endl; */
-/*     return false; */
-/* } */
-/**/
-/* vector<string> updatedRecord = records[id]; */
-/**/
-/* for (const auto& [attr, val] : attrMap) { */
-/*     if (tableAttrMap.find(attr) != tableAttrMap.end()) { */
-/*         updatedRecord[tableAttrMap[attr]] = val; */
-/*     } else { */
-/*         cerr << "Unknown attribute: " << attr */
-/*              << " for table: " << table_name << endl; */
-/*         return false; */
-/*     } */
-/* } */
-/**/
-/* records[id] = updatedRecord; */
-/**/
-/* ofstream file(table_file, ios::trunc); */
-/* if (!file.is_open()) { */
-/*     cerr << "Failed to update record in table: " << table_name << endl;
- */
-/*     return false; */
-/* } */
-/**/
-/* for (const auto& record : records) { */
-/*     for (size_t i = 0; i < record.size(); ++i) { */
-/*         file << record[i]; */
-/*         if (i < record.size() - 1) file << ","; */
-/*     } */
-/*     file << "\n"; */
-/* } */
-/**/
-/* file.close(); */
-/*     return true; */
-/* } */
-
 bool DBManager::joinTables(const vector<string>& tables,
                            unordered_map<string, string>& attrMap) {
     constexpr size_t MAX_THREADS = 8;
@@ -541,7 +453,7 @@ bool DBManager::joinTables(const vector<string>& tables,
         }
 
         // Calculate join attribute positions
-        int attr_pos1;
+        int attr_pos1 = 0;
         int attr_pos2 = metadata2[attrMap[next_table]];
 
         if (i == 1) {
@@ -651,43 +563,4 @@ bool DBManager::joinTables(const vector<string>& tables,
 
     fs::remove(temp_result);
     return true;
-}
-
-vector<vector<string>> DBManager::joinRecords(
-    const vector<vector<string>>& left_records,
-    const vector<vector<string>>& right_records, int left_index,
-    int right_index) {
-    vector<vector<string>> result;
-
-    /* // Join is performed here */
-    /* for (const auto& left_row : left_records) { */
-    /*     for (const auto& right_row : right_records) { */
-    /*         if (left_row[left_index] == right_row[right_index]) { */
-    /*             vector<string> combined_row = left_row; */
-    /*             combined_row.insert(combined_row.end(),
-     * right_row.begin(), */
-    /*                                 right_row.end()); */
-    /*             result.push_back(combined_row); */
-    /*         } */
-    /*     } */
-    /* } */
-
-    return result;
-}
-
-unordered_map<string, int> DBManager::createJoinAttributeMap(
-    const unordered_map<string, int>& left_attributes,
-    const unordered_map<string, int>& right_attributes,
-    const string& left_table_name, const string& right_table_name) {
-    unordered_map<string, int> new_attr_map = {};
-    /* int col_idx = 0; */
-    /**/
-    /* for (const auto& [attr, idx] : left_attributes) { */
-    /*     new_attr_map[left_table_name + "." + attr] = col_idx++; */
-    /* } */
-    /**/
-    /* for (const auto& [attr, idx] : right_attributes) { */
-    /*     new_attr_map[right_table_name + "." + attr] = col_idx++; */
-    /* } */
-    return new_attr_map;
 }
