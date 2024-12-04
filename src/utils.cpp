@@ -1,4 +1,10 @@
 #include "utils.h"
+#include <fstream>       
+#include <sstream>      
+#include <unordered_map>
+#include <vector> 
+#include <mutex>
+#include <string>
 #include <iostream>
 
 using namespace std;

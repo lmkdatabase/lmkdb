@@ -5,9 +5,6 @@
 
 class JoinWorker {
    private:
-    using HashTable =
-        std::unordered_multimap<std::string, std::vector<std::string>>;
-
     std::string output_path;
     int join_attr_pos;
     std::mutex output_mutex;
@@ -18,6 +15,9 @@ class JoinWorker {
     buildHashTable(const std::string& shard_path, int attr_pos);
 
    public:
+    using HashTable =
+        std::unordered_multimap<std::string, std::vector<std::string>>;
+    
     JoinWorker(const std::string& output_file, int attr_position)
         : output_path(output_file), join_attr_pos(attr_position) {}
 

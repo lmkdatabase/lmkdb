@@ -415,7 +415,7 @@ bool DBManager::deleteTable(const string& table_name) {
         return false;
     }
 
-    fs::remove(table_path);
+    fs::remove_all(table_path);
 
     cout << "Table deleted successfully: " << table_name << endl;
 
