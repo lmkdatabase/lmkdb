@@ -519,6 +519,9 @@ bool DBManager::joinTables(const vector<string>& tables,
                          to_string(time(nullptr)) + ".csv";
     string current_table = tables[0];
 
+    // For tracking columns in intermediate results
+    int current_num_columns = 0;
+
     for (size_t i = 1; i < tables.size(); ++i) {
         const string& next_table = tables[i];
         string new_temp = getTablePath(next_table) + "/temp_" + to_string(i) +
