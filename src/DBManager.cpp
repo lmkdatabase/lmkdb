@@ -7,6 +7,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -504,6 +505,134 @@ bool DBManager::deleteTable(const string& table_name) {
 /*     return true; */
 /* } */
 
+bool DBManager::joinTables(const vector<string>& tables,
+                           unordered_map<string, string>& attrMap) {
+    // Validate tables and get metadata first
+    unordered_map<string, unordered_map<string, int>> attr_maps;
+    for (const auto& [table, attr] : attrMap) {
+        if (!fs::exists(getTablePath(table))) {
+            cerr << "Table does not exist: " << table << endl;
+            return false;
+        }
+        attr_maps[table] = getMetadata(table);
+        if (attr_maps[table].find(attr) == attr_maps[table].end()) {
+            cerr << "Invalid attribute: " << attr << " for table: " << table
+                 << endl;
+            return false;
+        }
+    }
+
+    string current_table = tables[0];
+    fs::path temp_result = getTablePath(current_table) + "/temp_join.csv";
+
+    // Process each join one at a time
+    for (size_t i = 1; i < tables.size(); i++) {
+        string next_table = tables[i];
+        fs::path new_temp =
+            getTablePath(next_table) + "/temp_join_" + to_string(i) + ".csv";
+
+        // Get attribute positions for join
+        int attr1_pos = attr_maps[current_table][attrMap[current_table]];
+        int attr2_pos = attr_maps[next_table][attrMap[next_table]];
+
+        // Get shards for both tables
+        vector<string> shards1;
+        if (i == 1) {
+            shards1 = getShardPaths(current_table);
+        } else {
+            shards1 = {temp_result.string()};
+        }
+        vector<string> shards2 = getShardPaths(next_table);
+
+        ofstream result_file(new_temp.string());
+        mutex write_mutex;
+
+        // Process each shard of the first table
+        for (const auto& shard1 : shards1) {
+            ifstream file1(shard1);
+            string line1;
+
+            while (getline(file1, line1)) {
+                vector<string> record1;
+                istringstream ss1(line1);
+                string field;
+                while (getline(ss1, field, ',')) {
+                    record1.push_back(field);
+                }
+
+                string join_value = record1[attr1_pos];
+
+                // For each matching record in second table's shards, output
+                // joined record
+                vector<thread> shard_workers;
+                for (const auto& shard2 : shards2) {
+                    shard_workers.emplace_back([&, shard2]() {
+                        ifstream file2(shard2);
+                        string line2;
+                        vector<string> temp_matches;
+
+                        while (getline(file2, line2)) {
+                            vector<string> record2;
+                            istringstream ss2(line2);
+                            string field2;
+                            while (getline(ss2, field2, ',')) {
+                                record2.push_back(field2);
+                            }
+
+                            if (record2[attr2_pos] == join_value) {
+                                string joined_record;
+                                for (const auto& field : record1) {
+                                    joined_record += field + ",";
+                                }
+                                for (size_t j = 0; j < record2.size(); j++) {
+                                    joined_record += record2[j];
+                                    if (j < record2.size() - 1)
+                                        joined_record += ",";
+                                }
+                                temp_matches.push_back(joined_record);
+                            }
+                        }
+
+                        // Write matches in one batch with lock
+                        if (!temp_matches.empty()) {
+                            lock_guard<mutex> lock(write_mutex);
+                            for (const auto& match : temp_matches) {
+                                result_file << match << "\n";
+                            }
+                        }
+                    });
+                }
+
+                // Wait for all shard processes to complete
+                for (auto& worker : shard_workers) {
+                    worker.join();
+                }
+            }
+        }
+
+        result_file.close();
+
+        // Clean up previous temp file if it exists
+        if (i > 1) {
+            fs::remove(temp_result);
+        }
+        temp_result = new_temp;
+        current_table = next_table;
+    }
+
+    // Output final results
+    ifstream final_result(temp_result.string());
+    string line;
+    while (getline(final_result, line)) {
+        cout << line << endl;
+    }
+
+    // Clean up final temp file
+    fs::remove(temp_result);
+
+    return true;
+}
+
 vector<vector<string>> DBManager::joinRecords(
     const vector<vector<string>>& left_records,
     const vector<vector<string>>& right_records, int left_index,
@@ -540,58 +669,4 @@ unordered_map<string, int> DBManager::createJoinAttributeMap(
     /*     new_attr_map[right_table_name + "." + attr] = col_idx++; */
     /* } */
     return new_attr_map;
-}
-
-bool DBManager::joinTables(const vector<string>& tables,
-                           unordered_map<string, string>& attrMap) {
-    /* unordered_map<string, vector<vector<string>>> record_map; */
-    /* unordered_map<string, unordered_map<string, int>> attr_maps; */
-    /**/
-    /* for (const auto& [table, attr] : attrMap) { */
-    /*     string table_path = getFilePath(table); */
-    /**/
-    /*     if (!fs::exists(table_path)) { */
-    /*         cerr << "Table does not exist: " << table << endl; */
-    /*         return false; */
-    /*     } */
-    /**/
-    /*     record_map[table] = readAllRecords(table); */
-    /*     attr_maps[table] = getMetadata(table); */
-    /* } */
-    /**/
-    /* size_t idx = 0; */
-    /* string join_table = tables[idx]; */
-    /**/
-    /* while (idx < tables.size() - 1) { */
-    /*     const string& right_table = tables[idx + 1]; */
-    /**/
-    /*     vector<vector<string>> join_records = record_map[join_table]; */
-    /*     vector<vector<string>> right_records = record_map[right_table]; */
-    /**/
-    /*     auto& join_attr_map = attr_maps[join_table]; */
-    /*     auto& right_attr_map = attr_maps[right_table]; */
-    /**/
-    /*     int join_index = join_attr_map[attrMap[join_table]]; */
-    /*     int right_index = right_attr_map[attrMap[right_table]]; */
-    /**/
-    /*     // Create new attribute map for joined result */
-    /*     unordered_map<string, int> new_attr_map = createJoinAttributeMap( */
-    /*         join_attr_map, right_attr_map, join_table, right_table); */
-    /**/
-    /*     vector<vector<string>> result = */
-    /*         joinRecords(join_records, right_records, join_index,
-     * right_index); */
-    /**/
-    /*     // Update values for next iteration */
-    /*     string joined_table_name = join_table + "_" + right_table; */
-    /*     record_map[joined_table_name] = result; */
-    /*     attr_maps[joined_table_name] = new_attr_map; */
-    /**/
-    /*     idx++; */
-    /*     join_table = joined_table_name; */
-    /* } */
-    /**/
-    /* printRecords(record_map[join_table]); */
-
-    return true;
 }
