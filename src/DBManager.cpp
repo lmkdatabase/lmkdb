@@ -418,21 +418,138 @@ bool DBManager::deleteTable(const string& table_name) {
     return true;
 }
 
-bool DBManager::joinTables(const vector<string>& tables,
-                           unordered_map<string, string>& attrMap) {
-    constexpr size_t MAX_THREADS = 8;
-
+// Validation functions
+bool validateInputTables(const vector<string>& tables) {
     if (tables.size() < 2) {
         cerr << "Error: At least two tables are required for a join." << endl;
+        return false;
+    }
+    return true;
+}
+
+bool validateTableAttributes(
+    const string& table, const string& attr,
+    const unordered_map<string, unordered_map<string, int>>& metadata) {
+    if (metadata.at(table).find(attr) == metadata.at(table).end()) {
+        cerr << "Error: Invalid attribute mapping for table " << table << endl;
+        return false;
+    }
+    return true;
+}
+
+JoinPositions DBManager::calculateJoinPositions(
+    const string& current_table, const string& next_table,
+    const string& temp_result, const unordered_map<string, string>& attrMap,
+    bool is_first_join) {
+    JoinPositions positions{0, 0, 0};
+    auto metadata2 = getMetadata(next_table);
+    positions.attr_pos2 = metadata2.at(attrMap.at(next_table));
+
+    if (is_first_join) {
+        auto metadata1 = getMetadata(current_table);
+        positions.attr_pos1 = metadata1.at(attrMap.at(current_table));
+        positions.current_num_columns = metadata1.size();
+    } else {
+        positions.attr_pos1 = 0;
+        ifstream temp_read(temp_result);
+        string first_line;
+        if (getline(temp_read, first_line)) {
+            positions.current_num_columns =
+                count(first_line.begin(), first_line.end(), ',') + 1;
+        }
+    }
+    return positions;
+}
+
+// Thread management and processing
+vector<string> processTableShards(const vector<string>& shards1,
+                                  const vector<string>& shards2,
+                                  const string& table_path, int attr_pos1,
+                                  int attr_pos2) {
+    constexpr size_t MAX_THREADS = 8;
+    vector<string> thread_temp_files;
+    vector<thread> workers;
+
+    for (size_t batch_start = 0; batch_start < shards1.size();
+         batch_start += MAX_THREADS) {
+        size_t batch_end = min(batch_start + MAX_THREADS, shards1.size());
+        vector<string> current_batch(shards1.begin() + batch_start,
+                                     shards1.begin() + batch_end);
+
+        for (const auto& shard : current_batch) {
+            string thread_temp = table_path + "/thread_temp_" +
+                                 to_string(batch_start) + "_" +
+                                 to_string(time(nullptr)) + ".csv";
+            thread_temp_files.push_back(thread_temp);
+
+            workers.emplace_back([&, shard, thread_temp]() {
+                JoinWorker worker(thread_temp);
+                worker.processShardBatch({shard}, shards2, attr_pos1,
+                                         attr_pos2);
+            });
+        }
+
+        for (auto& worker : workers) {
+            if (worker.joinable()) {
+                worker.join();
+            }
+        }
+        workers.clear();
+    }
+
+    return thread_temp_files;
+}
+
+// File operations
+bool mergeThreadResults(const vector<string>& thread_temp_files,
+                        const string& output_file) {
+    ofstream final_out(output_file, ios::trunc);
+    bool has_data = false;
+
+    for (const auto& temp_file : thread_temp_files) {
+        if (fs::exists(temp_file)) {
+            ifstream thread_in(temp_file);
+            if (thread_in.is_open()) {
+                final_out << thread_in.rdbuf();
+                has_data = true;
+                thread_in.close();
+            }
+            fs::remove(temp_file);
+        }
+    }
+    final_out.close();
+
+    if (!has_data) {
+        cerr << "Error: No data written to output file" << endl;
+        return false;
+    }
+    return true;
+}
+
+void displayResults(const string& result_file) {
+    ifstream final_result(result_file);
+    if (!final_result.is_open()) {
+        cerr << "Error: Cannot open final result file: " << result_file << endl;
+        return;
+    }
+
+    cout << "Reading final results from: " << result_file << endl;
+    string line;
+    while (getline(final_result, line)) {
+        cout << line << endl;
+    }
+}
+
+// Main join function
+bool DBManager::joinTables(const vector<string>& tables,
+                           unordered_map<string, string>& attrMap) {
+    if (!validateInputTables(tables)) {
         return false;
     }
 
     string temp_result = getTablePath(tables[0]) + "/temp_join_0_" +
                          to_string(time(nullptr)) + ".csv";
     string current_table = tables[0];
-
-    // For tracking columns in intermediate results
-    int current_num_columns = 0;
 
     for (size_t i = 1; i < tables.size(); ++i) {
         const string& next_table = tables[i];
@@ -444,98 +561,21 @@ bool DBManager::joinTables(const vector<string>& tables,
             fs::create_directories(getTablePath(next_table));
         }
 
-        // Get metadata for both tables
-        auto metadata2 = getMetadata(next_table);
-        if (metadata2.find(attrMap[next_table]) == metadata2.end()) {
-            cerr << "Error: Invalid attribute mapping for table " << next_table
-                 << endl;
-            return false;
-        }
-
-        // Calculate join attribute positions
-        int attr_pos1 = 0;
-        int attr_pos2 = metadata2[attrMap[next_table]];
-
-        if (i == 1) {
-            // First join: use original metadata
-            auto metadata1 = getMetadata(current_table);
-            if (metadata1.find(attrMap[current_table]) == metadata1.end()) {
-                cerr << "Error: Invalid attribute mapping for table "
-                     << current_table << endl;
-                return false;
-            }
-            attr_pos1 = metadata1[attrMap[current_table]];
-            current_num_columns = metadata1.size();
-        } else {
-            // Subsequent joins: use position from first table in intermediate
-            // results
-            attr_pos1 = 0;  // Always use first occurrence of join attribute
-            // Count columns in intermediate result by reading first line
-            ifstream temp_read(temp_result);
-            string first_line;
-            if (getline(temp_read, first_line)) {
-                current_num_columns =
-                    count(first_line.begin(), first_line.end(), ',') + 1;
-            }
-        }
+        JoinPositions positions = calculateJoinPositions(
+            current_table, next_table, temp_result, attrMap, i == 1);
 
         vector<string> shards1 = (i == 1) ? getShardPaths(current_table)
                                           : vector<string>{temp_result};
         vector<string> shards2 = getShardPaths(next_table);
 
-        vector<thread> workers;
-        vector<string> thread_temp_files;
+        auto thread_temp_files =
+            processTableShards(shards1, shards2, getTablePath(next_table),
+                               positions.attr_pos1, positions.attr_pos2);
 
-        for (size_t batch_start = 0; batch_start < shards1.size();
-             batch_start += MAX_THREADS) {
-            size_t batch_end = min(batch_start + MAX_THREADS, shards1.size());
-            vector<string> current_batch(shards1.begin() + batch_start,
-                                         shards1.begin() + batch_end);
-
-            for (const auto& shard : current_batch) {
-                string thread_temp = getTablePath(next_table) +
-                                     "/thread_temp_" + to_string(batch_start) +
-                                     "_" + to_string(time(nullptr)) + ".csv";
-                thread_temp_files.push_back(thread_temp);
-
-                workers.emplace_back([&, shard, thread_temp]() {
-                    JoinWorker worker(thread_temp);
-                    worker.processShardBatch({shard}, shards2, attr_pos1,
-                                             attr_pos2);
-                });
-            }
-
-            for (auto& worker : workers) {
-                if (worker.joinable()) {
-                    worker.join();
-                }
-            }
-            workers.clear();
-        }
-
-        // Merge thread temp files into new_temp
-        ofstream final_out(new_temp, ios::trunc);
-        bool has_data = false;
-
-        for (const auto& temp_file : thread_temp_files) {
-            if (fs::exists(temp_file)) {
-                ifstream thread_in(temp_file);
-                if (thread_in.is_open()) {
-                    final_out << thread_in.rdbuf();
-                    has_data = true;
-                    thread_in.close();
-                }
-                fs::remove(temp_file);
-            }
-        }
-        final_out.close();
-
-        if (!has_data) {
-            cerr << "Error: No data written to output file" << endl;
+        if (!mergeThreadResults(thread_temp_files, new_temp)) {
             return false;
         }
 
-        // Cleanup previous temp result if it exists
         if (i > 1 && fs::exists(temp_result)) {
             fs::remove(temp_result);
         }
@@ -549,18 +589,7 @@ bool DBManager::joinTables(const vector<string>& tables,
         return false;
     }
 
-    ifstream final_result(temp_result);
-    if (!final_result.is_open()) {
-        cerr << "Error: Cannot open final result file: " << temp_result << endl;
-        return false;
-    }
-
-    cout << "Reading final results from: " << temp_result << endl;
-    string line;
-    while (getline(final_result, line)) {
-        cout << line << endl;
-    }
-
+    displayResults(temp_result);
     fs::remove(temp_result);
     return true;
 }

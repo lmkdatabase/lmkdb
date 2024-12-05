@@ -10,6 +10,12 @@ struct ShardLocation {
     size_t record_index;
 };
 
+struct JoinPositions {
+    int attr_pos1;
+    int attr_pos2;
+    int current_num_columns;
+};
+
 class DBManager {
    public:
     DBManager(std::string dbPath);
@@ -50,6 +56,12 @@ class DBManager {
     std::string getTargetShard(const std::string& table_name);
 
     std::string getMetadataPath(const std::string& table_name) const;
+
+    JoinPositions calculateJoinPositions(
+        const std::string& current_table, const std::string& next_table,
+        const std::string& temp_result,
+        const std::unordered_map<std::string, std::string>& attrMap,
+        bool is_first_join);
 
     bool updateShardRecord(
         const std::string& table_name, const std::string& shard_path,
