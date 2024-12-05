@@ -310,9 +310,8 @@ bool DBManager::deleteByIndex(const string& table_name, size_t id) {
     return true;
 }
 
-
-bool DBManager::deleteByAttributes(const string& table_name,
-                                   const unordered_map<string, string>& attrMap) {
+bool DBManager::deleteByAttributes(
+    const string& table_name, const unordered_map<string, string>& attrMap) {
     if (!fs::exists(getTablePath(table_name))) {
         cerr << "Table does not exist: " << table_name << endl;
         return false;

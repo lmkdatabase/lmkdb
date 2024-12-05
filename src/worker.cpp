@@ -10,7 +10,8 @@
 
 using namespace std;
 
-JoinWorker::HashTable JoinWorker::buildHashTable(const string& shard_path, int attr_pos) {
+JoinWorker::HashTable JoinWorker::buildHashTable(const string& shard_path,
+                                                 int attr_pos) {
     unordered_multimap<string, vector<string>> table;
     ifstream file(shard_path);
     string line;

@@ -17,7 +17,7 @@ class JoinWorker {
    public:
     using HashTable =
         std::unordered_multimap<std::string, std::vector<std::string>>;
-    
+
     JoinWorker(const std::string& output_file, int attr_position)
         : output_path(output_file), join_attr_pos(attr_position) {}
 
