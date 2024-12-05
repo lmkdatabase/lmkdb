@@ -5,6 +5,17 @@
 #include <unordered_map>
 #include <vector>
 
+struct ShardLocation {
+    std::string shard_path;
+    size_t record_index;
+};
+
+struct JoinPositions {
+    int attr_pos1;
+    int attr_pos2;
+    int current_num_columns;
+};
+
 class DBManager {
    public:
     DBManager(std::string dbPath);
@@ -17,13 +28,13 @@ class DBManager {
     bool insertRecord(
         const std::string& table_name,
         const std::unordered_map<std::string, std::string>& attrMap);
-    std::vector<std::vector<std::string>> readAllRecords(
-        const std::string& table_name);
+    void readTable(const std::string& table_name,
+                   const std::vector<int>& line_numbers);
     bool updateRecord(
-        const std::string& table_name, const int& id,
+        const std::string& table_name, size_t id,
         const std::unordered_map<std::string, std::string>& attrMap);
 
-    bool deleteByIndex(const std::string& table_name, const int& id,
+    bool deleteByIndex(const std::string& table_name, size_t id,
                        const std::vector<std::string>& attributes);
     bool deleteByAttributes(
         const std::string& table_name,
@@ -34,6 +45,28 @@ class DBManager {
 
    private:
     const std::string database_path;
+    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+
+    std::string getTablePath(const std::string& table_name) const;
+    std::string getShardPath(const std::string& table_name,
+                             size_t shard_num) const;
+    std::vector<std::string> getShardPaths(const std::string& table_name);
+    ShardLocation findShardForUpdate(const std::string& table_name,
+                                     size_t target_idx);
+    std::string getTargetShard(const std::string& table_name);
+
+    std::string getMetadataPath(const std::string& table_name) const;
+
+    JoinPositions calculateJoinPositions(
+        const std::string& current_table, const std::string& next_table,
+        const std::string& temp_result,
+        const std::unordered_map<std::string, std::string>& attrMap,
+        bool is_first_join);
+
+    bool updateShardRecord(
+        const std::string& table_name, const std::string& shard_path,
+        size_t target_idx,
+        const std::unordered_map<std::string, std::string>& updates);
 
     void printRecords(const std::vector<std::vector<std::string>>& records);
 
@@ -49,7 +82,7 @@ class DBManager {
         const std::string& right_table_name);
 
     std::string getFilePath(const std::string& file_name) const;
-    std::unordered_map<std::string, int> getTableAttributesMap(
+    std::unordered_map<std::string, int> getMetadata(
         const std::string& table_name);
 };
 
