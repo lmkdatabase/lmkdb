@@ -56,12 +56,6 @@ class DBManager {
 
     std::string getMetadataPath(const std::string& table_name) const;
 
-    JoinPositions calculateJoinPositions(
-        const std::string& current_table, const std::string& next_table,
-        const std::string& temp_result,
-        const std::unordered_map<std::string, std::string>& attrMap,
-        bool is_first_join);
-
     bool updateShardRecord(
         const std::string& table_name, const std::string& shard_path,
         size_t target_idx,
