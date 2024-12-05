@@ -48,7 +48,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
         return;
     }
     // Case 1: delete table_name id:2 attr1 attr2 ...
-    if (tokens[0].starts_with("id:")) {
+    if (tokens.size() > 1 && tokens[0].starts_with("id:")) {
         size_t pos = tokens[0].find(':');
         if (pos == string::npos || tokens[0].substr(pos + 1).empty()) {
             cerr << "Error: Invalid format." << endl;
@@ -62,7 +62,13 @@ void DatabaseAPI::deleteOp(const string &tableName,
         }
 
         vector<string> attributes(tokens.begin() + 1, tokens.end());
-        dbManager->deleteByIndex(tableName, stoi(idValue), attributes);
+        unordered_map<string, string> attrMap;
+
+        for (const auto &attr : attributes) {
+            attrMap[attr] = "NULL";
+        }
+
+        dbManager->updateRecord(tableName, stoi(idValue), attrMap);
         return;
     }
 
@@ -80,7 +86,7 @@ void DatabaseAPI::deleteOp(const string &tableName,
             return;
         }
 
-        dbManager->deleteByIndex(tableName, stoi(idValue), {});
+        dbManager->deleteByIndex(tableName, stoi(idValue));
         return;
     }
 

@@ -1,12 +1,11 @@
 #include "main.h"
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <iostream>
 #include "Interpreter.h"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace std;
 
 fs::path get_or_create_cfg_path() {

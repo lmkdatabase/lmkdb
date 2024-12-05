@@ -34,8 +34,7 @@ class DBManager {
         const std::string& table_name, size_t id,
         const std::unordered_map<std::string, std::string>& attrMap);
 
-    bool deleteByIndex(const std::string& table_name, size_t id,
-                       const std::vector<std::string>& attributes);
+    bool deleteByIndex(const std::string& table_name, size_t id);
     bool deleteByAttributes(
         const std::string& table_name,
         const std::unordered_map<std::string, std::string>& attrMap);

@@ -1,5 +1,6 @@
 #include "Interpreter.h"
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -39,7 +40,8 @@ void Interpreter::processCommand(const string &command) {
         return;
     }
 
-    boost::algorithm::to_lower(tokens[0]);
+    transform(tokens[0].begin(), tokens[0].end(), tokens[0].begin(),
+              [](unsigned char c) { return std::tolower(c); });
 
     string operation = tokens[0];
 
@@ -56,12 +58,19 @@ void Interpreter::processCommand(const string &command) {
     } else if (operation == "update" && tokens.size() >= 4) {
         string tableName = tokens[1];
 
-        if (!validateInteger(tokens[2])) {
-            cout << "Please provide a valid id as the third argument." << endl;
+        size_t pos = tokens[2].find(':');
+        if (pos == string::npos || tokens[0].substr(pos + 1).empty()) {
+            cerr << "Error: Invalid format for specifying id." << endl;
             return;
         }
 
-        int recordId = stoi(tokens[2]);
+        string idValue = tokens[2].substr(pos + 1);
+        if (!validateInteger(idValue)) {
+            cerr << "Error: id must be a valid integer." << endl;
+            return;
+        }
+
+        int recordId = stoi(idValue);
         vector<string> updatedRecord(tokens.begin() + 3, tokens.end());
         dbApi->updateOp(tableName, recordId, updatedRecord);
 

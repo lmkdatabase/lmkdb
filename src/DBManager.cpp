@@ -1,7 +1,6 @@
 #include "DBManager.h"
 #include <algorithm>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -13,7 +12,7 @@
 #include <vector>
 #include "worker.h"
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 using namespace std;
 
 DBManager::DBManager(string dbPath) : database_path(std::move(dbPath)) {
@@ -233,10 +232,10 @@ bool DBManager::updateShardRecord(
     ofstream out_file(tmp_file);
 
     string line;
-    size_t current_idx = 0;
+    size_t curr_idx = 0;
 
     while (getline(in_file, line)) {
-        if (current_idx != target_idx) {
+        if (curr_idx != target_idx) {
             out_file << line << "\n";
         } else {
             vector<string> record{};
@@ -260,7 +259,7 @@ bool DBManager::updateShardRecord(
             }
             out_file << "\n";
         }
-        current_idx++;
+        curr_idx++;
     }
 
     fs::rename(tmp_file, shard_path);
@@ -279,142 +278,107 @@ bool DBManager::updateRecord(const string& table_name, size_t id,
                              location.record_index, attrMap);
 }
 
-bool DBManager::deleteByIndex(const string& table_name, size_t id,
-                              const vector<string>& attributes) {
-    /* string table_file = getFilePath(table_name); */
-    /* if (!fs::exists(table_file)) { */
-    /*     cerr << "Table does not exist: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* vector<vector<string>> records = readAllRecords(table_name); */
-    /* if (id < 0 || id >= records.size()) { */
-    /*     cerr << "Index out of bounds: " << id << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* unordered_map<string, int> tableAttrMap = getMetadata(table_name); */
-    /* if (tableAttrMap.empty()) { */
-    /*     cerr << "Failed to retrieve attribute mapping for table: " <<
-     * table_name */
-    /*          << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* if (attributes.empty()) { */
-    /*     records.erase(records.begin() + id); */
-    /* } else { */
-    /*     for (const auto& attr : attributes) { */
-    /*         if (tableAttrMap.find(attr) != tableAttrMap.end()) { */
-    /*             int attrIndex = tableAttrMap[attr]; */
-    /*             records[id][attrIndex] = "NULL"; */
-    /*         } else { */
-    /*             cerr << "Unknown attribute: " << attr << endl; */
-    /*             return false; */
-    /*         } */
-    /*     } */
-    /* } */
-    /**/
-    /* ofstream file(table_file, ios::trunc); */
-    /* if (!file.is_open()) { */
-    /*     cerr << "Failed to write to table: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* for (const auto& record : records) { */
-    /*     for (size_t i = 0; i < record.size(); ++i) { */
-    /*         file << record[i]; */
-    /*         if (i < record.size() - 1) file << ","; */
-    /*     } */
-    /*     file << "\n"; */
-    /* } */
-    /**/
-    /* file.close(); */
+bool DBManager::deleteByIndex(const string& table_name, size_t id) {
+    if (!fs::exists(getTablePath(table_name))) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return false;
+    }
+
+    auto location = findShardForUpdate(table_name, id);
+    if (location.shard_path.empty()) {
+        cerr << "Record not found in table: " << table_name << endl;
+        return false;
+    }
+
+    string tmp_file = location.shard_path + ".tmp";
+    ifstream in_file(location.shard_path);
+    ofstream out_file(tmp_file);
+
+    string line;
+    size_t curr_idx = 0;
+    while (getline(in_file, line)) {
+        if (curr_idx != location.record_index) {
+            out_file << line << "\n";
+        }
+        curr_idx++;
+    }
+
+    in_file.close();
+    out_file.close();
+
+    fs::rename(tmp_file, location.shard_path);
     return true;
 }
 
 bool DBManager::deleteByAttributes(
     const string& table_name, const unordered_map<string, string>& attrMap) {
-    /* string table_file = getFilePath(table_name); */
-    /* if (!fs::exists(table_file)) { */
-    /*     cerr << "Table does not exist: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* vector<vector<string>> records = readAllRecords(table_name); */
-    /* unordered_map<string, int> tableAttrMap = getMetadata(table_name); */
-    /* if (tableAttrMap.empty()) { */
-    /*     cerr << "Failed to retrieve attribute mapping for table: " <<
-     * table_name */
-    /*          << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* vector<vector<string>> updatedRecords; */
-    /* for (const auto& record : records) { */
-    /*     bool match = true; */
-    /**/
-    /*     for (const auto& [key, value] : attrMap) { */
-    /*         if (tableAttrMap.find(key) == tableAttrMap.end()) { */
-    /*             cerr << "Unknown attribute: " << key << endl; */
-    /*             return false; */
-    /*         } */
-    /**/
-    /*         int index = tableAttrMap[key]; */
-    /*         if (record[index] != value) { */
-    /*             match = false; */
-    /*             break; */
-    /*         } */
-    /*     } */
-    /**/
-    /*     if (!match) { */
-    /*         updatedRecords.push_back(record); */
-    /*     } */
-    /* } */
-    /**/
-    /* ofstream file(table_file, ios::trunc); */
-    /* if (!file.is_open()) { */
-    /*     cerr << "Failed to write to table: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* for (const auto& record : updatedRecords) { */
-    /*     for (size_t i = 0; i < record.size(); ++i) { */
-    /*         file << record[i]; */
-    /*         if (i < record.size() - 1) file << ","; */
-    /*     } */
-    /*     file << "\n"; */
-    /* } */
-    /**/
-    /* file.close(); */
+    if (!fs::exists(getTablePath(table_name))) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return false;
+    }
+
+    auto metadata = getMetadata(table_name);
+    if (metadata.empty()) {
+        cerr << "Failed to retrieve metadata for table: " << table_name << endl;
+        return false;
+    }
+
+    for (const auto& [attr, _] : attrMap) {
+        if (metadata.find(attr) == metadata.end()) {
+            cerr << "Invalid attribute: " << attr << endl;
+            return false;
+        }
+    }
+
+    auto shards = getShardPaths(table_name);
+    for (const auto& shard : shards) {
+        string tmp_file = shard + ".tmp";
+        ifstream in_file(shard);
+        ofstream out_file(tmp_file);
+
+        string line;
+        while (getline(in_file, line)) {
+            vector<string> record;
+            istringstream ss(line);
+            string field;
+            while (getline(ss, field, ',')) {
+                record.push_back(field);
+            }
+
+            bool match = true;
+            for (const auto& [attr, value] : attrMap) {
+                if (record[metadata[attr]] != value) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (!match) {
+                out_file << line << "\n";
+            }
+        }
+
+        in_file.close();
+        out_file.close();
+
+        fs::rename(tmp_file, shard);
+    }
+
     return true;
 }
 
 bool DBManager::deleteTable(const string& table_name) {
-    /* string table_file = getFilePath(table_name); */
-    /* string attr_mapping = getFilePath(table_name + "_mapping"); */
-    /**/
-    /* if (!fs::exists(table_file)) { */
-    /*     cerr << "Table does not exist: " << table_name << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* if (!fs::remove(table_file)) { */
-    /*     cerr << "Failed to delete table file: " << table_file << endl; */
-    /*     return false; */
-    /* } */
-    /**/
-    /* if (fs::exists(attr_mapping)) { */
-    /*     if (!fs::remove(attr_mapping)) { */
-    /*         cerr << "Failed to delete attribute mapping file: " <<
-     * attr_mapping */
-    /*              << endl; */
-    /*         return false; */
-    /*     } */
-    /* } */
-    /**/
-    /* cout << "Table and mapping deleted successfully: " << table_name << endl;
-     */
+    string table_path = getTablePath(table_name);
+
+    if (!fs::exists(table_path)) {
+        cerr << "Table does not exist: " << table_name << endl;
+        return false;
+    }
+
+    fs::remove_all(table_path);
+
+    cout << "Table deleted successfully: " << table_name << endl;
+
     return true;
 }
 
