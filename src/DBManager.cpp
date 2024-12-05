@@ -441,14 +441,15 @@ JoinPositions DBManager::calculateJoinPositions(
     const string& current_table, const string& next_table,
     const string& temp_result, const unordered_map<string, string>& attrMap,
     bool is_first_join) {
-    JoinPositions positions{0, 0, 0};
+    JoinPositions positions{
+        .attr_pos1 = 0, .attr_pos2 = 0, .current_num_columns = 0};
     auto metadata2 = getMetadata(next_table);
     positions.attr_pos2 = metadata2.at(attrMap.at(next_table));
 
     if (is_first_join) {
         auto metadata1 = getMetadata(current_table);
         positions.attr_pos1 = metadata1.at(attrMap.at(current_table));
-        positions.current_num_columns = metadata1.size();
+        positions.current_num_columns = (int)metadata1.size();
     } else {
         positions.attr_pos1 = 0;
         ifstream temp_read(temp_result);
@@ -461,7 +462,6 @@ JoinPositions DBManager::calculateJoinPositions(
     return positions;
 }
 
-// Thread management and processing
 vector<string> processTableShards(const vector<string>& shards1,
                                   const vector<string>& shards2,
                                   const string& table_path, int attr_pos1,
@@ -500,7 +500,6 @@ vector<string> processTableShards(const vector<string>& shards1,
     return thread_temp_files;
 }
 
-// File operations
 bool mergeThreadResults(const vector<string>& thread_temp_files,
                         const string& output_file) {
     ofstream final_out(output_file, ios::trunc);
@@ -540,7 +539,6 @@ void displayResults(const string& result_file) {
     }
 }
 
-// Main join function
 bool DBManager::joinTables(const vector<string>& tables,
                            unordered_map<string, string>& attrMap) {
     if (!validateInputTables(tables)) {
