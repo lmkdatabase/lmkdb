@@ -10,8 +10,8 @@
 
 using namespace std;
 
-JoinWorker::HashTable JoinWorker::buildHashTable(const string& shard_path,
-                                                 int attr_pos) {
+unordered_multimap<string, vector<string>> JoinWorker::buildHashTable(
+    const string& shard_path, int attr_pos) {
     unordered_multimap<string, vector<string>> table;
     ifstream file(shard_path);
     string line;
@@ -32,14 +32,24 @@ void JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
                                    const vector<string>& all_shards_B,
                                    int attr_pos_A, int attr_pos_B) {
     for (const auto& shard_A : shard_batch_A) {
+        ifstream check_file(shard_A);
+        if (!check_file.good()) {
+            cerr << "Error: Cannot open shard file: " << shard_A << endl;
+            continue;
+        }
+
         // Build hash table for this shard of A
         auto hash_table = buildHashTable(shard_A, attr_pos_A);
 
         // Stream through all shards of B
         for (const auto& shard_B : all_shards_B) {
             ifstream file_B(shard_B);
-            string line;
+            if (!file_B.good()) {
+                cerr << "Error: Cannot open shard file: " << shard_B << endl;
+                continue;
+            }
 
+            string line;
             while (getline(file_B, line)) {
                 vector<string> record_B;
                 istringstream ss(line);
@@ -48,20 +58,40 @@ void JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
                     record_B.push_back(field);
                 }
 
+                if (record_B.size() <= attr_pos_B) {
+                    cerr << "Error: Invalid record structure in shard B"
+                         << endl;
+                    continue;
+                }
+
                 // Find matches
                 auto range = hash_table.equal_range(record_B[attr_pos_B]);
                 for (auto it = range.first; it != range.second; ++it) {
                     lock_guard<mutex> lock(output_mutex);
-                    // Write joined record to output
                     ofstream out(output_path, ios::app);
-                    for (const auto& field : it->second) {
-                        out << field << ",";
+                    if (!out.good()) {
+                        cerr
+                            << "Error: Cannot open output file: " << output_path
+                            << endl;
+                        continue;
                     }
-                    for (size_t i = 0; i < record_B.size(); i++) {
-                        out << record_B[i];
-                        if (i < record_B.size() - 1) out << ",";
+
+                    // Write joined record
+                    const auto& record_A = it->second;
+                    string output_line;
+
+                    // Write all fields from A
+                    for (size_t i = 0; i < record_A.size(); ++i) {
+                        if (i > 0) output_line += ",";
+                        output_line += record_A[i];
                     }
-                    out << "\n";
+
+                    // Write all fields from B
+                    for (const auto& field : record_B) {
+                        output_line += "," + field;
+                    }
+
+                    out << output_line << "\n";
                 }
             }
         }
