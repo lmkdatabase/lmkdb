@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "worker.h"
+#include "Shard.h"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -496,7 +496,6 @@ void displayResults(const string& result_file) {
         return;
     }
 
-    cout << "Reading final results from: " << result_file << endl;
     string line;
     while (getline(final_result, line)) {
         cout << line << endl;
@@ -509,49 +508,84 @@ bool DBManager::joinTables(const vector<string>& tables,
         return false;
     }
 
-    string temp_result = getTablePath(tables[0]) + "/temp_join_0_" +
-                         to_string(time(nullptr)) + ".csv";
+    vector<shared_ptr<Shard>> current_shards;
+    auto paths = getShardPaths(tables[0]);
+
+    for (const auto& shard_path : paths) {
+        current_shards.push_back(make_shared<Shard>(shard_path));
+    }
+
+    auto current_metadata = getMetadata(tables[0]);
     string current_table = tables[0];
 
     for (size_t i = 1; i < tables.size(); ++i) {
         const string& next_table = tables[i];
-        string new_temp = getTablePath(next_table) + "/temp_" + to_string(i) +
-                          "_" + current_table + "_" + next_table + "_" +
-                          to_string(rand()) + ".csv";
+        auto next_metadata = getMetadata(next_table);
 
         if (!fs::exists(getTablePath(next_table))) {
             fs::create_directories(getTablePath(next_table));
         }
 
-        JoinPositions positions = calculateJoinPositions(
-            current_table, next_table, temp_result, attrMap, i == 1);
+        // Get shards for next table
+        vector<shared_ptr<Shard>> next_shards;
+        auto next_paths = getShardPaths(next_table);
 
-        vector<string> shards1 = (i == 1) ? getShardPaths(current_table)
-                                          : vector<string>{temp_result};
-        vector<string> shards2 = getShardPaths(next_table);
-
-        auto thread_temp_files =
-            processTableShards(shards1, shards2, getTablePath(next_table),
-                               positions.attr_pos1, positions.attr_pos2);
-
-        if (!mergeThreadResults(thread_temp_files, new_temp)) {
-            return false;
+        for (const auto& shard_path : next_paths) {
+            next_shards.push_back(make_shared<Shard>(shard_path));
         }
 
-        if (i > 1 && fs::exists(temp_result)) {
-            fs::remove(temp_result);
+        vector<shared_ptr<Shard>> joined_shards;
+        vector<future<Shard::JoinResult>> join_futures;
+
+        for (size_t j = 0; j < current_shards.size(); j++) {
+            auto current = current_shards[j];
+            join_futures.push_back(current->joinAsync(
+                next_shards, attrMap[current_table], attrMap[next_table],
+                current_metadata, next_metadata));
         }
 
-        temp_result = new_temp;
+        // Collect results
+        for (auto& future : join_futures) {
+            auto result = future.get();
+            if (!result.success) {
+                cerr << "Join failed: " << result.error_message << endl;
+                return false;
+            }
+            joined_shards.push_back(result.result_shard);
+        }
+
+        auto merged_shard = make_shared<Shard>();
+
+        {
+            ofstream out(merged_shard->path());
+            bool first = true;
+
+            for (const auto& shard : joined_shards) {
+                ifstream in(shard->path());
+                if (in.is_open()) {
+                    // Keep header only from first shard
+                    if (!first) {
+                        string header;
+                        getline(in, header);
+                    }
+                    out << in.rdbuf();
+                    first = false;
+                } else {
+                    cout << "Failed to open shard for reading: "
+                         << shard->path() << endl;
+                }
+            }
+        }
+
+        // Keep the joined shards in scope until after merge
+        current_shards = {merged_shard};
+        current_metadata = next_metadata;
         current_table = next_table;
     }
 
-    if (!fs::exists(temp_result)) {
-        cerr << "Error: Final result file not found: " << temp_result << endl;
-        return false;
+    if (!current_shards.empty()) {
+        displayResults(current_shards[0]->path());
     }
 
-    displayResults(temp_result);
-    fs::remove(temp_result);
     return true;
 }

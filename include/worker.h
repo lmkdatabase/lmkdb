@@ -16,7 +16,7 @@ class JoinWorker {
    public:
     JoinWorker(const std::string& output_file) : output_path(output_file) {}
 
-    void processShardBatch(const std::vector<std::string>& shard_batch_A,
+    bool processShardBatch(const std::vector<std::string>& shard_batch_A,
                            const std::vector<std::string>& all_shards_B,
                            int attr_pos_A, int attr_pos_B);
 };
