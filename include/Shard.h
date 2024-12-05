@@ -6,25 +6,23 @@
 #include <vector>
 #include "worker.h"
 
-namespace fs = std::filesystem;
-using namespace std;
-
 class Shard {
    private:
-    fs::path path_;
+    std::filesystem::path path_;
     bool temp_;
-    static fs::path generateTempPath(const string& prefix = "shard_");
+    static std::filesystem::path generateTempPath(
+        const std::string& prefix = "shard_");
 
    public:
     struct JoinResult {
         bool success;
-        shared_ptr<Shard> result_shard;
-        string error_message;
+        std::shared_ptr<Shard> result_shard;
+        std::string error_message;
     };
 
-    explicit Shard(const string& file_path);
+    explicit Shard(const std::string& file_path);
     explicit Shard();
-    string path() const;
+    std::string path() const;
 
     // Move semantics
     Shard(Shard&& other) noexcept = default;
@@ -36,9 +34,9 @@ class Shard {
 
     ~Shard();
 
-    future<JoinResult> joinAsync(
-        const vector<shared_ptr<Shard>>& others, const string& this_join_attr,
-        const string& other_join_attr,
-        const unordered_map<string, int>& this_metadata,
-        const unordered_map<string, int>& other_metadata) const;
+    std::future<JoinResult> joinAsync(
+        const std::vector<std::shared_ptr<Shard>>& others,
+        const std::string& this_join_attr, const std::string& other_join_attr,
+        const std::unordered_map<std::string, int>& this_metadata,
+        const std::unordered_map<std::string, int>& other_metadata) const;
 };
