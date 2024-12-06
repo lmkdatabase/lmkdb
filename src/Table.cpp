@@ -213,7 +213,6 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
         return false;
     }
 
-    // Create temporary file for the update
     fs::path temp_path = location.shard->path() + ".tmp";
     ifstream in_file(location.shard->path());
     ofstream out_file(temp_path);
@@ -222,7 +221,6 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
     size_t current_index = 0;
     auto metadata = getMetadata();
 
-    // Process the shard line by line
     while (getline(in_file, line)) {
         if (current_index != location.record_index) {
             out_file << line << "\n";
@@ -239,7 +237,7 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
                 record[metadata.at(attr)] = value;
             }
 
-            // Write updated record
+            // Write updated record to temp
             bool first = true;
             for (const auto& field : record) {
                 if (!first) out_file << ",";

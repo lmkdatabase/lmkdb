@@ -1,5 +1,4 @@
 #include "worker.h"
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -58,13 +57,12 @@ bool JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
                     record_B.push_back(field);
                 }
 
-                if (record_B.size() <= attr_pos_B) {
+                if ((int)record_B.size() <= attr_pos_B) {
                     cerr << "Error: Invalid record structure in shard B"
                          << endl;
                     continue;
                 }
 
-                // Find matches
                 auto range = hash_table.equal_range(record_B[attr_pos_B]);
                 for (auto it = range.first; it != range.second; ++it) {
                     lock_guard<mutex> lock(output_mutex);
@@ -76,17 +74,14 @@ bool JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
                         continue;
                     }
 
-                    // Write joined record
                     const auto& record_A = it->second;
                     string output_line;
 
-                    // Write all fields from A
                     for (size_t i = 0; i < record_A.size(); ++i) {
                         if (i > 0) output_line += ",";
                         output_line += record_A[i];
                     }
 
-                    // Write all fields from B
                     for (const auto& field : record_B) {
                         output_line += "," + field;
                     }
