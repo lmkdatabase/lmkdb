@@ -126,12 +126,13 @@ RecordLocation Table::findRecord(size_t target_idx) const {
 }
 
 bool Table::insert(const unordered_map<string, string>& updated_record) {
+    loadMetadata();
     auto shards = getShards();
 
     if (shards.empty() ||
         fs::file_size(shards.back()->path()) >= MAX_SHARD_SIZE) {
         shared_ptr<Shard> new_shard = make_shared<Shard>(
-            tablePath() + "shard_" + to_string(shards.size()) + ".csv");
+            tablePath() + "/shard_" + to_string(shards.size()) + ".csv");
 
         shards_.push_back(new_shard);
     }
@@ -168,6 +169,8 @@ bool Table::insert(const unordered_map<string, string>& updated_record) {
 }
 
 void Table::read(const vector<int>& lines) {
+    loadMetadata();
+
     int index = 0;
 
     for (const auto& shard : getShards()) {
@@ -199,6 +202,8 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
     if (!validateAttributes(updates)) {
         return false;
     }
+
+    loadMetadata();
 
     // Find which shard contains our record
     auto location = findRecord(id);
@@ -255,6 +260,7 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
 future<shared_ptr<Table>> Table::join(const Table& other,
                                       const string& this_join_attr,
                                       const string& other_join_attr) {
+    loadMetadata();
     return async(
         launch::async, [this, other, this_join_attr, other_join_attr]() {
             vector<future<Shard::JoinResult>> join_futures;
@@ -278,10 +284,14 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             }
 
             // Create new temporary table for result
-            auto result_table =
-                make_shared<Table>(name_ + "_join_" + other.getName(),
-                                   fs::temp_directory_path(), true);
+            string result_table_name = name_ + "_join_" + other.getName();
+            fs::path temp_dir = fs::temp_directory_path() / result_table_name;
+            fs::create_directories(temp_dir);
 
+            auto result_table = make_shared<Table>(
+                result_table_name, fs::temp_directory_path(), true);
+
+            // Create and write metadata for the joined table
             unordered_map<string, int> combined_metadata = getMetadata();
             int offset = (int)getMetadata().size();
             for (const auto& [key, value] : other.getMetadata()) {
@@ -291,10 +301,18 @@ future<shared_ptr<Table>> Table::join(const Table& other,
                     combined_metadata[key] = value + offset;
                 }
             }
+
+            ofstream metadata_file(temp_dir / "metadata.txt");
+            for (const auto& [attr, index] : combined_metadata) {
+                metadata_file << attr << "," << index << "\n";
+            }
+            metadata_file.close();
+
             result_table->setMetadata(combined_metadata);
 
             // Merge shards into result table
-            auto merged_shard = make_shared<Shard>();
+            auto merged_shard =
+                make_shared<Shard>((temp_dir / "shard_0.csv").string());
             {
                 ofstream out(merged_shard->path());
                 bool first = true;
