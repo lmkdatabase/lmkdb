@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main.hpp"
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <filesystem>
