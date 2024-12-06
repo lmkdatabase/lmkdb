@@ -92,6 +92,34 @@ const unordered_map<string, int>& Table::getMetadata() const {
     return metadata_;
 }
 
+void Table::read(const vector<int>& lines) {
+    int index = 0;
+
+    for (const auto& shard : getShards()) {
+        ifstream file(shard->path());
+        string line;
+
+        while (getline(file, line)) {
+            istringstream ss(line);
+            string field;
+            bool first = true;
+
+            if (!lines.empty() && ranges::find(lines, index) == lines.end()) {
+                index++;
+                continue;
+            }
+
+            while (getline(ss, field, ',')) {
+                if (!first) cout << ",";
+                cout << field;
+                first = false;
+            }
+            cout << endl;
+            index++;
+        }
+    }
+}
+
 future<shared_ptr<Table>> Table::join(const Table& other,
                                       const string& this_join_attr,
                                       const string& other_join_attr) {

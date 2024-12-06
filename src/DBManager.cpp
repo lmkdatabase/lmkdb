@@ -162,39 +162,8 @@ void DBManager::readTable(const string& table_name,
         return;
     }
 
-    vector<string> shards = getShardPaths(table_name);
-
-    if (shards.empty()) {
-        cerr << "Table is empty: " << table_name << endl;
-        return;
-    }
-
-    int index = 0;
-
-    for (const auto& shard : shards) {
-        ifstream file(shard);
-        string line;
-
-        while (getline(file, line)) {
-            istringstream ss(line);
-            string field;
-            bool first = true;
-
-            if (!line_numbers.empty() &&
-                ranges::find(line_numbers, index) == line_numbers.end()) {
-                index++;
-                continue;
-            }
-
-            while (getline(ss, field, ',')) {
-                if (!first) cout << ",";
-                cout << field;
-                first = false;
-            }
-            cout << endl;
-            index++;
-        }
-    }
+    Table table = Table(table_name);
+    table.read(line_numbers);
 }
 
 ShardLocation DBManager::findShardForUpdate(const string& table_name,
