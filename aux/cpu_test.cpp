@@ -1,7 +1,13 @@
+#ifdef __APPLE__
+#include <util.h>  // for forkpty
+#else
 #include <pty.h>
+#endif
+
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <util.h>
 #include <chrono>
 #include <cstring>
 #include <iostream>
@@ -102,22 +108,14 @@ void run_tests(int fd) {
     string output;
 
     output = read_output(fd);
-    // std::cout << output;
-    // std::cout.flush();
 
     for (auto& input : inputs) {
-        // // Get user input
-        // std::getline(std::cin, input);
-        //
         auto start = std::chrono::system_clock::now();
 
         write_input(fd, input);
         output = read_output(fd);
 
         auto end = std::chrono::system_clock::now();
-        // std::cout << output;
-        // std::cout.flush();
-        //
         auto duration =
             std::chrono::duration_cast<std::chrono::seconds>(end - start);
 
@@ -125,7 +123,6 @@ void run_tests(int fd) {
     }
 
     close(fd);
-    // waitpid(pid, nullptr, 0);  // Wait for the child process to exit
 }
 
 int main() {
