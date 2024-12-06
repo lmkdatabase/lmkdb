@@ -351,19 +351,6 @@ bool DBManager::deleteTable(const string& table_name) {
     return true;
 }
 
-void displayResults(const string& result_file) {
-    ifstream final_result(result_file);
-    if (!final_result.is_open()) {
-        cerr << "Error: Cannot open final result file: " << result_file << endl;
-        return;
-    }
-
-    string line;
-    while (getline(final_result, line)) {
-        cout << line << endl;
-    }
-}
-
 bool DBManager::joinTables(const vector<string>& tables,
                            unordered_map<string, string>& attrMap) {
     try {
