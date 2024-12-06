@@ -2,6 +2,7 @@
 #include "Table.h"
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -9,13 +10,26 @@
 namespace fs = std::filesystem;
 using namespace std;
 
-Table::Table(const string& name, fs::path base_path)
-    : name_(name), path_(base_path.string() + "/" + name) {
-    loadMetadata();
+Table::Table(const string& name, fs::path base_path, bool temporary)
+    : name_(name), path_(base_path / name), temp_(temporary) {
+    if (!temp_) {
+        loadMetadata();
+        loadShards();
+    } else {
+        fs::create_directory(path_);
+    }
 }
 
-string Table::tablePath() {
+string Table::tablePath() const {
     return path_.string();
+}
+
+string Table::getName() const {
+    return name_;
+}
+
+bool Table::isTemp() const {
+    return temp_;
 }
 
 void Table::loadShards() {
@@ -62,4 +76,86 @@ void Table::loadMetadata() {
     }
 
     metadata_ = attributes_map;
+}
+
+const vector<shared_ptr<Shard>>& Table::getShards() const {
+    return shards_;
+}
+
+void Table::setMetadata(const unordered_map<string, int>& metadata) {
+    if (isTemp()) {
+        metadata_ = metadata;
+    }
+}
+
+const unordered_map<string, int>& Table::getMetadata() const {
+    return metadata_;
+}
+
+future<shared_ptr<Table>> Table::join(const Table& other,
+                                      const string& this_join_attr,
+                                      const string& other_join_attr) {
+    return async(
+        launch::async, [this, other, this_join_attr, other_join_attr]() {
+            vector<future<Shard::JoinResult>> join_futures;
+            vector<shared_ptr<Shard>> joined_shards;
+
+            // Process each shard of this table
+            for (const auto& shard : shards_) {
+                join_futures.push_back(shard->joinAsync(
+                    other.getShards(), this_join_attr, other_join_attr,
+                    metadata_, other.getMetadata()));
+            }
+
+            // Collect results
+            for (auto& future : join_futures) {
+                auto result = future.get();
+                if (!result.success) {
+                    throw runtime_error("Join failed: " + result.error_message);
+                }
+                joined_shards.push_back(result.result_shard);
+            }
+
+            // Create new temporary table for result
+            auto result_table = make_shared<Table>(
+                name_ + "_join_" + other.getName(), fs::temp_directory_path(),
+                true  // Mark as temporary
+            );
+
+            // Set metadata for result table (combine metadata from both tables)
+            unordered_map<string, int> combined_metadata = metadata_;
+            int offset = metadata_.size();
+            for (const auto& [key, value] : other.getMetadata()) {
+                if (key == other_join_attr) {
+                    combined_metadata[key] = metadata_[this_join_attr];
+                } else {
+                    combined_metadata[key] = value + offset;
+                }
+            }
+            result_table->setMetadata(combined_metadata);
+
+            // Merge shards into result table
+            // (You might want to implement this differently based on your
+            // needs)
+            auto merged_shard = make_shared<Shard>();
+            {
+                ofstream out(merged_shard->path());
+                bool first = true;
+
+                for (const auto& shard : joined_shards) {
+                    ifstream in(shard->path());
+                    if (in.is_open()) {
+                        if (!first) {
+                            string header;
+                            getline(in, header);
+                        }
+                        out << in.rdbuf();
+                        first = false;
+                    }
+                }
+            }
+
+            result_table->shards_ = {merged_shard};
+            return result_table;
+        });
 }
