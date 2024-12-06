@@ -1,13 +1,11 @@
 #ifndef RECORD_MANAGER_H
 #define RECORD_MANAGER_H
 
-#include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "Table.h"
+#include "Table.hpp"
 
 class DBManager {
    public:
