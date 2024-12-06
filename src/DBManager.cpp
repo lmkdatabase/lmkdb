@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -384,14 +385,7 @@ bool DBManager::joinTables(const vector<string>& tables,
             current_table = result_future.get();
         }
 
-        if (!current_table->getShards().empty()) {
-            ifstream result_file(current_table->getShards()[0]->path());
-            string line;
-            while (getline(result_file, line)) {
-                cout << line << endl;
-            }
-        }
-
+        current_table->read({});
         return true;
 
     } catch (const exception& e) {
