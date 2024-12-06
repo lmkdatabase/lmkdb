@@ -267,7 +267,6 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             vector<future<Shard::JoinResult>> join_futures;
             vector<shared_ptr<Shard>> joined_shards;
 
-            // Process each shard of this table
             join_futures.reserve(getShards().size());
             for (const auto& shard : getShards()) {
                 join_futures.push_back(shard->joinShards(
@@ -283,7 +282,8 @@ future<shared_ptr<Table>> Table::join(const Table& other,
                 joined_shards.push_back(result.result_shard);
             }
 
-            // Create new temporary table for result
+            // Create new temporary table for result and write metadata for the
+            // table
             string result_table_name = name_ + "_join_" + other.getName();
             fs::path temp_dir = fs::temp_directory_path() / result_table_name;
             fs::create_directories(temp_dir);
@@ -291,7 +291,6 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             auto result_table = make_shared<Table>(
                 result_table_name, fs::temp_directory_path(), true);
 
-            // Create and write metadata for the joined table
             unordered_map<string, int> combined_metadata = getMetadata();
             int offset = (int)getMetadata().size();
             for (const auto& [key, value] : other.getMetadata()) {
@@ -310,7 +309,6 @@ future<shared_ptr<Table>> Table::join(const Table& other,
 
             result_table->setMetadata(combined_metadata);
 
-            // Merge shards into result table
             auto merged_shard =
                 make_shared<Shard>((temp_dir / "shard_0.csv").string());
             {
