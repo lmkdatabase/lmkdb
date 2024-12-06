@@ -39,7 +39,7 @@ class Table {
 
    public:
     explicit Table(const std::string& name,
-                   std::filesystem::path base_path = "./database",
+                   const std::filesystem::path& base_path = "./database",
                    bool temporary = false);
 
     std::string getName() const;

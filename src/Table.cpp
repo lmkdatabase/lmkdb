@@ -10,7 +10,7 @@
 namespace fs = std::filesystem;
 using namespace std;
 
-Table::Table(const string& name, fs::path base_path, bool temporary)
+Table::Table(const string& name, const fs::path& base_path, bool temporary)
     : name_(name), path_(base_path / name), temp_(temporary) {
     if (!temp_) {
         loadMetadata();
