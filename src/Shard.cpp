@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <worker.hpp>
 
 namespace fs = std::filesystem;
 using namespace std;
