@@ -13,7 +13,7 @@ class JoinWorker {
     std::mutex output_mutex;
 
     // Build hash table from single shard
-    std::unordered_multimap<std::string, std::vector<std::string>>
+    std::unordered_multimap<std::string, std::pair<std::string, std::streampos>>
     buildHashTable(const std::string& shard_path, int attr_pos);
 
    public:
