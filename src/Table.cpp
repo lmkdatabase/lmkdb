@@ -270,7 +270,7 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             // Process each shard of this table
             join_futures.reserve(getShards().size());
             for (const auto& shard : getShards()) {
-                join_futures.push_back(shard->joinAsync(
+                join_futures.push_back(shard->joinShards(
                     other.getShards(), this_join_attr, other_join_attr,
                     getMetadata(), other.getMetadata()));
             }

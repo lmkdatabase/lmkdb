@@ -37,7 +37,7 @@ Shard::~Shard() {
     }
 };
 
-future<Shard::JoinResult> Shard::joinAsync(
+future<Shard::JoinResult> Shard::joinShards(
     const vector<shared_ptr<Shard>>& others, const string& this_join_attr,
     const string& other_join_attr,
     const unordered_map<string, int>& this_metadata,

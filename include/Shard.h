@@ -37,7 +37,7 @@ class Shard {
 
     ~Shard();
 
-    std::future<JoinResult> joinAsync(
+    std::future<JoinResult> joinShards(
         const std::vector<std::shared_ptr<Shard>>& others,
         const std::string& this_join_attr, const std::string& other_join_attr,
         const std::unordered_map<std::string, int>& this_metadata,
