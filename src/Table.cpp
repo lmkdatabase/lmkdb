@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -90,6 +91,48 @@ void Table::setMetadata(const unordered_map<string, int>& metadata) {
 
 const unordered_map<string, int>& Table::getMetadata() const {
     return metadata_;
+}
+
+bool Table::insert(const unordered_map<string, string>& updated_record) {
+    auto shards = getShards();
+
+    if (shards.empty() ||
+        fs::file_size(shards.back()->path()) >= MAX_SHARD_SIZE) {
+        shared_ptr<Shard> new_shard = make_shared<Shard>(
+            tablePath() + "shard_" + to_string(shards.size()) + ".csv");
+
+        shards_.push_back(new_shard);
+    }
+
+    auto table_columns = getMetadata();
+    vector<string> values(table_columns.size(), "");
+
+    for (const auto& [attr, val] : updated_record) {
+        if (table_columns.find(attr) != table_columns.end()) {
+            values[table_columns[attr]] = val;
+        } else {
+            cerr << "Unknown attribute: " << attr << " for table: " << getName()
+                 << endl;
+            return false;
+        }
+    }
+
+    string record;
+    for (size_t i = 0; i < values.size(); ++i) {
+        record += values[i];
+        if (i < values.size() - 1) record += ",";
+    }
+
+    ofstream file(shards.back()->path(), ios::app);
+
+    if (!file.is_open()) {
+        cerr << "Failed to open shard for writing" << endl;
+        return false;
+    }
+
+    file << record << "\n";
+
+    return true;
 }
 
 void Table::read(const vector<int>& lines) {

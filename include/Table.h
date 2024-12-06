@@ -14,6 +14,8 @@ class Table {
     void loadMetadata();
     void loadShards();
 
+    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+
    public:
     explicit Table(const std::string& name,
                    std::filesystem::path base_path = "./database",
@@ -32,4 +34,6 @@ class Table {
         const std::string& other_join_attr);
 
     void read(const std::vector<int>& lines);
+    bool insert(
+        const std::unordered_map<std::string, std::string>& updated_record);
 };

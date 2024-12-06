@@ -79,46 +79,10 @@ bool DBManager::createTable(const string& table_name,
 
 bool DBManager::insertRecord(const string& table_name,
                              const unordered_map<string, string>& attrMap) {
-    if (!fs::exists(getTablePath(table_name))) {
-        cerr << "Table does not exist: " << table_name << endl;
-        return false;
-    }
+    Table table = Table(table_name);
+    bool success = table.insert(attrMap);
 
-    ofstream file(getTargetShard(table_name), ios::app);
-    if (!file.is_open()) {
-        cerr << "Failed to open shard for writing" << endl;
-        return false;
-    }
-
-    unordered_map<string, int> tableAttrMap = getMetadata(table_name);
-
-    if (tableAttrMap.empty()) {
-        cerr << "Failed to retrieve attribute mapping for table: " << table_name
-             << endl;
-        return false;
-    }
-
-    vector<string> values(tableAttrMap.size(), "");
-
-    for (const auto& [attr, val] : attrMap) {
-        if (tableAttrMap.find(attr) != tableAttrMap.end()) {
-            values[tableAttrMap[attr]] = val;
-        } else {
-            cerr << "Unknown attribute: " << attr
-                 << " for table: " << table_name << endl;
-            return false;
-        }
-    }
-
-    string record;
-    for (size_t i = 0; i < values.size(); ++i) {
-        record += values[i];
-        if (i < values.size() - 1) record += ",";
-    }
-
-    file << record << "\n";
-
-    return true;
+    return success;
 }
 
 unordered_map<string, int> DBManager::getMetadata(const string& table_name) {
