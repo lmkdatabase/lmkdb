@@ -381,15 +381,6 @@ bool DBManager::deleteTable(const string& table_name) {
     return true;
 }
 
-// Validation functions
-bool validateInputTables(const vector<string>& tables) {
-    if (tables.size() < 2) {
-        cerr << "Error: At least two tables are required for a join." << endl;
-        return false;
-    }
-    return true;
-}
-
 void displayResults(const string& result_file) {
     ifstream final_result(result_file);
     if (!final_result.is_open()) {
@@ -412,11 +403,11 @@ bool DBManager::joinTables(const vector<string>& tables,
             return false;
         }
 
-        auto current_table = make_shared<Table>(tables[0], "./database");
+        auto current_table = make_shared<Table>(tables[0]);
         string join_attr = attrMap[tables[0]];
 
         for (size_t i = 1; i < tables.size(); ++i) {
-            auto next_table = make_shared<Table>(tables[i], "./database");
+            auto next_table = make_shared<Table>(tables[i]);
 
             auto result_future = current_table->join(
                 *next_table, join_attr, attrMap[next_table->getName()]);
