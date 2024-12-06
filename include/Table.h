@@ -16,30 +16,31 @@ class Table {
     std::unordered_map<std::string, int> metadata_;
     bool temp_;
 
+    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+
     void loadMetadata();
     void loadShards();
 
-    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+    bool validateAttributes(
+        const std::unordered_map<std::string, std::string>& attributes) const;
+    RecordLocation findRecord(size_t target_idx) const;
+
+    bool isTemp() const;
+
+    const std::unordered_map<std::string, int>& getMetadata() const;
+    const std::vector<std::shared_ptr<Shard>>& getShards() const;
+    void setMetadata(const std::unordered_map<std::string, int>& metadata);
+
+    template <typename T>
+    bool deleteRecord(const T& criteria);
 
    public:
     explicit Table(const std::string& name,
                    std::filesystem::path base_path = "./database",
                    bool temporary = false);
 
-    std::string tablePath() const;
     std::string getName() const;
-    bool isTemp() const;
-
-    const std::unordered_map<std::string, int>& getMetadata() const;
-    const std::vector<std::shared_ptr<Shard>>& getShards() const;
-    void setMetadata(const std::unordered_map<std::string, int>& metadata);
-    RecordLocation findRecord(size_t target_idx) const;
-
-    bool validateAttributes(
-        const std::unordered_map<std::string, std::string>& attributes) const;
-
-    template <typename T>
-    bool deleteRecord(const T& criteria);
+    std::string tablePath() const;
 
     bool deleteByIndex(size_t index);
     bool deleteByAttributes(
