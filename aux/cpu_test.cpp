@@ -7,7 +7,6 @@
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
-#include <util.h>
 #include <chrono>
 #include <cstring>
 #include <iostream>
