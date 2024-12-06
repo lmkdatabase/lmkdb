@@ -1,4 +1,4 @@
-#include "Table.h"
+#include "Table.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
