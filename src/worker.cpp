@@ -37,6 +37,7 @@ unordered_multimap<string, pair<string, streampos>> JoinWorker::buildHashTable(
 bool JoinWorker::processShardBatch(const string& shard_A,
                                    const vector<string>& all_shards_B,
                                    int attr_pos_A, int attr_pos_B) {
+    ofstream out(output_path, ios::app);
     auto index = buildHashTable(shard_A, attr_pos_A);
     string line{};
 
@@ -59,7 +60,6 @@ bool JoinWorker::processShardBatch(const string& shard_A,
                 getline(reader, matching_record);
 
                 lock_guard<mutex> lock(output_mutex);
-                ofstream out(output_path, ios::app);
                 out << matching_record << "," << line << "\n";
             }
         }
