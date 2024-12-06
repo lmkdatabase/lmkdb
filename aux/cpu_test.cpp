@@ -120,7 +120,7 @@ void run_tests(int fd) {
 }
 
 int main() {
-    std::string command = "./build/lmkdb";  // Replace with your command
+    std::string command = "../build/lmkdb";
     int fd = runInteractiveSubprocess(command);
     run_tests(fd);
     return 0;
