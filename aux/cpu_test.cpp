@@ -1,3 +1,9 @@
+/*
+ * With heavy inspiration from
+ * https://github.com/vi/syscall_limiter/blob/master/writelimiter/popen2.c
+ * For creating a bidirectional pipe between parent & child process
+ */
+
 #ifdef __APPLE__
 #include <util.h>  // for forkpty
 #else
