@@ -116,7 +116,7 @@ RecordLocation Table::findRecord(size_t target_idx) const {
         size_t shard_records = count(istreambuf_iterator<char>(file),
                                      istreambuf_iterator<char>(), '\n');
 
-        // Check if our target record is in this shard
+        // Check if target record is in this shard
         if (current_index + shard_records > target_idx) {
             return {.shard = shard, .record_index = target_idx - current_index};
         }
@@ -274,7 +274,6 @@ future<shared_ptr<Table>> Table::join(const Table& other,
                     getMetadata(), other.getMetadata()));
             }
 
-            // Collect results
             for (auto& future : join_futures) {
                 auto result = future.get();
                 if (!result.success) {
