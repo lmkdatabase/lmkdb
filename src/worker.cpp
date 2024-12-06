@@ -1,6 +1,7 @@
 #include "worker.hpp"
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -9,9 +10,9 @@
 
 using namespace std;
 
-unordered_multimap<string, pair<string, streampos>> JoinWorker::buildHashTable(
+multimap<string, pair<string, streampos>> JoinWorker::buildHashTable(
     const string& shard_path, int attr_pos) {
-    unordered_multimap<string, pair<string, streampos>> index{};
+    multimap<string, pair<string, streampos>> index{};
 
     ifstream file(shard_path);
     string line;

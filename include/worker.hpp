@@ -1,6 +1,7 @@
 #ifndef WORKER_H
 #define WORKER_H
 
+#include <map>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -13,7 +14,7 @@ class JoinWorker {
     std::mutex output_mutex;
 
     // Build hash table from single shard
-    std::unordered_multimap<std::string, std::pair<std::string, std::streampos>>
+    std::multimap<std::string, std::pair<std::string, std::streampos>>
     buildHashTable(const std::string& shard_path, int attr_pos);
 
    public:
