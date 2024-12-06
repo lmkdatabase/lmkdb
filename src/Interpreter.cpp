@@ -6,7 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include "Api.hpp"
-#include "utils.h"
+#include "utils.hpp"
 
 using namespace std;
 
