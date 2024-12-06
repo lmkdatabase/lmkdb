@@ -23,7 +23,7 @@ using namespace std;
 
 void write_input(int fd, std::string input) {
     // Send input to the subprocess
-    input += "\n";  // Add newline for readline
+    input += "\n";
     write(fd, input.c_str(), input.size());
     fsync(fd);
 }
@@ -46,7 +46,7 @@ std::string read_output(int fd) {
             if (FD_ISSET(fd, &readfds)) {
                 bytesRead = read(fd, buffer, sizeof(buffer) - 1);
                 if (bytesRead > 0) {
-                    buffer[bytesRead] = '\0';  // Null-terminate the buffer
+                    buffer[bytesRead] = '\0';
                 }
                 fsync(fd);
 
@@ -65,7 +65,7 @@ std::string read_output(int fd) {
     }
 }
 
-int runInteractiveSubprocess(const std::string& command) {
+int setupLmkdbProcess(const std::string& command) {
     int masterFd;
     pid_t pid = forkpty(&masterFd, nullptr, nullptr, nullptr);
 
@@ -96,7 +96,7 @@ int runInteractiveSubprocess(const std::string& command) {
     }
 }
 
-void run_tests(int fd) {
+void runTests(int fd) {
     vector<string> inputs = {
         "read london_1000",
         "join london_1000.start_station_name london_stations.station_name",
@@ -132,7 +132,7 @@ void run_tests(int fd) {
 
 int main() {
     std::string command = "./build/lmkdb";
-    int fd = runInteractiveSubprocess(command);
-    run_tests(fd);
+    int fd = setupLmkdbProcess(command);
+    runTests(fd);
     return 0;
 }
