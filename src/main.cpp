@@ -3,7 +3,7 @@
 #include <readline/readline.h>
 #include <filesystem>
 #include <iostream>
-#include "Interpreter.h"
+#include "Interpreter.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
