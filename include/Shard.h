@@ -1,3 +1,6 @@
+#ifndef SHARD_H
+#define SHARD_H
+
 #include <filesystem>
 #include <future>
 #include <memory>
@@ -40,3 +43,5 @@ class Shard {
         const std::unordered_map<std::string, int>& this_metadata,
         const std::unordered_map<std::string, int>& other_metadata) const;
 };
+
+#endif

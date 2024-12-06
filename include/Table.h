@@ -1,3 +1,6 @@
+#ifndef TABLE_H
+#define TABLE_H
+
 #include <future>
 #include <memory>
 #include <unordered_map>
@@ -55,3 +58,5 @@ class Table {
     bool update(size_t id,
                 const std::unordered_map<std::string, std::string>& updates);
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef WORKER_H
+#define WORKER_H
+
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -20,3 +23,5 @@ class JoinWorker {
                            const std::vector<std::string>& all_shards_B,
                            int attr_pos_A, int attr_pos_B);
 };
+
+#endif
