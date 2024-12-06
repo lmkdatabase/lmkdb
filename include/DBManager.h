@@ -1,20 +1,13 @@
 #ifndef RECORD_MANAGER_H
 #define RECORD_MANAGER_H
 
+#include <functional>
+#include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-struct ShardLocation {
-    std::string shard_path;
-    size_t record_index;
-};
-
-struct JoinPositions {
-    int attr_pos1;
-    int attr_pos2;
-    int current_num_columns;
-};
+#include "Table.h"
 
 class DBManager {
    public:
@@ -27,7 +20,7 @@ class DBManager {
 
     bool insertRecord(
         const std::string& table_name,
-        const std::unordered_map<std::string, std::string>& attrMap);
+        const std::unordered_map<std::string, std::string>& record);
     void readTable(const std::string& table_name,
                    const std::vector<int>& line_numbers);
     bool updateRecord(
@@ -44,45 +37,12 @@ class DBManager {
 
    private:
     const std::string database_path;
-    const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
+    std::unordered_map<std::string, std::shared_ptr<Table>> tables;
 
-    std::string getTablePath(const std::string& table_name) const;
-    std::string getShardPath(const std::string& table_name,
-                             size_t shard_num) const;
-    std::vector<std::string> getShardPaths(const std::string& table_name);
-    ShardLocation findShardForUpdate(const std::string& table_name,
-                                     size_t target_idx);
-    std::string getTargetShard(const std::string& table_name);
-
+    void loadTables(const std::string& directory_path);
+    std::shared_ptr<Table> findTable(const std::string& table_name);
+    std::string NewTablePath(const std::string& table_name) const;
     std::string getMetadataPath(const std::string& table_name) const;
-
-    JoinPositions calculateJoinPositions(
-        const std::string& current_table, const std::string& next_table,
-        const std::string& temp_result,
-        const std::unordered_map<std::string, std::string>& attrMap,
-        bool is_first_join);
-
-    bool updateShardRecord(
-        const std::string& table_name, const std::string& shard_path,
-        size_t target_idx,
-        const std::unordered_map<std::string, std::string>& updates);
-
-    void printRecords(const std::vector<std::vector<std::string>>& records);
-
-    std::vector<std::vector<std::string>> joinRecords(
-        const std::vector<std::vector<std::string>>& left_records,
-        const std::vector<std::vector<std::string>>& right_records,
-        int left_index, int right_index);
-
-    std::unordered_map<std::string, int> createJoinAttributeMap(
-        const std::unordered_map<std::string, int>& left_attributes,
-        const std::unordered_map<std::string, int>& right_attributes,
-        const std::string& left_table_name,
-        const std::string& right_table_name);
-
-    std::string getFilePath(const std::string& file_name) const;
-    std::unordered_map<std::string, int> getMetadata(
-        const std::string& table_name);
 };
 
 #endif

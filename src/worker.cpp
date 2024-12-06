@@ -28,7 +28,7 @@ unordered_multimap<string, vector<string>> JoinWorker::buildHashTable(
     return table;
 }
 
-void JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
+bool JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
                                    const vector<string>& all_shards_B,
                                    int attr_pos_A, int attr_pos_B) {
     for (const auto& shard_A : shard_batch_A) {
@@ -96,4 +96,5 @@ void JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
             }
         }
     }
+    return true;
 }
