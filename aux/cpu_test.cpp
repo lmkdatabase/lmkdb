@@ -88,7 +88,16 @@ int runInteractiveSubprocess(const std::string& command) {
 void run_tests(int fd) {
     vector<string> inputs = {
         "read london_1000",
+        "join london_1000.start_station_name london_stations.station_name",
+        "read london_10_4",
+        "join london_10_4.start_station_name london_stations.station_name",
+        "read london_10_5",
+        "join london_10_5.start_station_name london_stations.station_name",
         "read london_10_6",
+        "join london_10_6.start_station_name london_stations.station_name",
+        "read london_10_7",
+        "join london_10_7.start_station_name london_stations.station_name",
+
     };
     string output;
 
@@ -120,7 +129,7 @@ void run_tests(int fd) {
 }
 
 int main() {
-    std::string command = "../build/lmkdb";
+    std::string command = "./build/lmkdb";
     int fd = runInteractiveSubprocess(command);
     run_tests(fd);
     return 0;
