@@ -175,6 +175,7 @@ void Table::read(const vector<int>& lines) {
 
     int index = 0;
 
+    // Find which shard contains the record
     for (const auto& shard : getShards()) {
         ifstream file(shard->path());
         string line;
@@ -308,27 +309,8 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             metadata_file.close();
 
             result_table->setMetadata(combined_metadata);
+            result_table->shards_ = joined_shards;
 
-            auto merged_shard =
-                make_shared<Shard>((temp_dir / "shard_0.csv").string());
-            {
-                ofstream out(merged_shard->path());
-                bool first = true;
-
-                for (const auto& shard : joined_shards) {
-                    ifstream in(shard->path());
-                    if (in.is_open()) {
-                        if (!first) {
-                            string header;
-                            getline(in, header);
-                        }
-                        out << in.rdbuf();
-                        first = false;
-                    }
-                }
-            }
-
-            result_table->shards_ = {merged_shard};
             return result_table;
         });
 }
