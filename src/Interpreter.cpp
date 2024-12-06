@@ -1,4 +1,4 @@
-#include "Interpreter.h"
+#include "Interpreter.hpp"
 #include <algorithm>
 #include <cctype>
 #include <iostream>

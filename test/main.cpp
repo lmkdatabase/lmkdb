@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "Interpreter.h"
+#include "Interpreter.hpp"
 
 std::string hw() {
     return "hello world";
