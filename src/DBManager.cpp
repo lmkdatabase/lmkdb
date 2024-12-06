@@ -47,7 +47,6 @@ bool DBManager::createTable(const std::string& table_name,
     }
 
     string table_path = NewTablePath(table_name);
-    cout << "New table path " << table_path << endl;
 
     fs::create_directory(table_path);
     ofstream metadata(table_path + "/metadata.txt");
