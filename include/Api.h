@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "DBManager.h"
+#include "DBManager.hpp"
 
 class DatabaseAPI {
    public:
