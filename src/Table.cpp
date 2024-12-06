@@ -206,7 +206,6 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
 
     if (!loadMetadata()) return false;
 
-    // Find which shard contains our record
     auto location = findRecord(id);
     if (!location.shard) {
         cerr << "Record " << id << " not found in table " << getName() << endl;
