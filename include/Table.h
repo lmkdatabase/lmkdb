@@ -33,8 +33,17 @@ class Table {
     const std::unordered_map<std::string, int>& getMetadata() const;
     const std::vector<std::shared_ptr<Shard>>& getShards() const;
     void setMetadata(const std::unordered_map<std::string, int>& metadata);
-
     RecordLocation findRecord(size_t target_idx) const;
+
+    bool validateAttributes(
+        const std::unordered_map<std::string, std::string>& attributes) const;
+
+    template <typename T>
+    bool deleteRecord(const T& criteria);
+
+    bool deleteByIndex(size_t index);
+    bool deleteByAttributes(
+        const std::unordered_map<std::string, std::string>& attr_values);
 
     std::future<std::shared_ptr<Table>> join(
         const Table& other, const std::string& this_join_attr,

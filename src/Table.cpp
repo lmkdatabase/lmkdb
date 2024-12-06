@@ -1,4 +1,3 @@
-
 #include "Table.h"
 #include <filesystem>
 #include <fstream>
@@ -93,6 +92,21 @@ const unordered_map<string, int>& Table::getMetadata() const {
     return metadata_;
 }
 
+bool Table::validateAttributes(
+    const unordered_map<string, string>& attributes) const {
+    const auto& metadata = getMetadata();
+
+    for (const auto& [attr, _] : attributes) {
+        if (metadata.find(attr) == metadata.end()) {
+            cerr << "Invalid attribute for table " << getName() << ": " << attr
+                 << endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 RecordLocation Table::findRecord(size_t target_idx) const {
     size_t current_index = 0;
 
@@ -182,14 +196,8 @@ void Table::read(const vector<int>& lines) {
 }
 
 bool Table::update(size_t id, const unordered_map<string, string>& updates) {
-    // First validate all attributes exist in our metadata
-    const auto& metadata = getMetadata();
-    for (const auto& [attr, _] : updates) {
-        if (metadata.find(attr) == metadata.end()) {
-            cerr << "Invalid attribute for table " << getName() << ": " << attr
-                 << endl;
-            return false;
-        }
+    if (!validateAttributes(updates)) {
+        return false;
     }
 
     // Find which shard contains our record
@@ -206,6 +214,7 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
 
     string line;
     size_t current_index = 0;
+    auto metadata = getMetadata();
 
     // Process the shard line by line
     while (getline(in_file, line)) {
@@ -306,4 +315,75 @@ future<shared_ptr<Table>> Table::join(const Table& other,
             result_table->shards_ = {merged_shard};
             return result_table;
         });
+}
+
+struct IndexCriteria {
+    size_t target_index;
+
+    bool operator()(const vector<string>& record, size_t current_index,
+                    const unordered_map<string, int>& metadata) const {
+        return current_index == target_index;
+    }
+};
+
+struct AttributeCriteria {
+    unordered_map<string, string> attr_values;
+
+    bool operator()(const vector<string>& record, size_t current_index,
+                    const unordered_map<string, int>& metadata) const {
+        for (const auto& [attr, value] : attr_values) {
+            if (record[metadata.at(attr)] != value) {
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+template <typename T>
+bool Table::deleteRecord(const T& criteria) {
+    bool deleted_any = false;
+
+    for (const auto& shard : getShards()) {
+        fs::path temp_path = shard->path() + ".tmp";
+        ifstream in_file(shard->path());
+        ofstream out_file(temp_path);
+
+        string line;
+        size_t current_index = 0;
+
+        while (getline(in_file, line)) {
+            vector<string> record;
+            istringstream ss(line);
+            string field;
+            while (getline(ss, field, ',')) {
+                record.push_back(field);
+            }
+
+            if (!criteria(record, current_index, getMetadata())) {
+                out_file << line << "\n";
+            } else {
+                deleted_any = true;
+            }
+            current_index++;
+        }
+
+        in_file.close();
+        out_file.close();
+        fs::rename(temp_path, shard->path());
+    }
+
+    return deleted_any;
+}
+
+bool Table::deleteByIndex(size_t index) {
+    return deleteRecord(IndexCriteria{index});
+}
+
+bool Table::deleteByAttributes(
+    const unordered_map<string, string>& attr_values) {
+    if (!validateAttributes(attr_values)) {
+        return false;
+    }
+    return deleteRecord(AttributeCriteria{attr_values});
 }

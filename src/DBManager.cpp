@@ -155,92 +155,17 @@ bool DBManager::updateRecord(const string& table_name, size_t id,
 }
 
 bool DBManager::deleteByIndex(const string& table_name, size_t id) {
-    if (!fs::exists(getTablePath(table_name))) {
-        cerr << "Table does not exist: " << table_name << endl;
-        return false;
-    }
+    Table table = Table(table_name);
+    bool success = table.deleteByIndex(id);
 
-    auto location = findShardForUpdate(table_name, id);
-    if (location.shard_path.empty()) {
-        cerr << "Record not found in table: " << table_name << endl;
-        return false;
-    }
-
-    string tmp_file = location.shard_path + ".tmp";
-    ifstream in_file(location.shard_path);
-    ofstream out_file(tmp_file);
-
-    string line;
-    size_t curr_idx = 0;
-    while (getline(in_file, line)) {
-        if (curr_idx != location.record_index) {
-            out_file << line << "\n";
-        }
-        curr_idx++;
-    }
-
-    in_file.close();
-    out_file.close();
-
-    fs::rename(tmp_file, location.shard_path);
-    return true;
+    return success;
 }
 
 bool DBManager::deleteByAttributes(
     const string& table_name, const unordered_map<string, string>& attrMap) {
-    if (!fs::exists(getTablePath(table_name))) {
-        cerr << "Table does not exist: " << table_name << endl;
-        return false;
-    }
-
-    auto metadata = getMetadata(table_name);
-    if (metadata.empty()) {
-        cerr << "Failed to retrieve metadata for table: " << table_name << endl;
-        return false;
-    }
-
-    for (const auto& [attr, _] : attrMap) {
-        if (metadata.find(attr) == metadata.end()) {
-            cerr << "Invalid attribute: " << attr << endl;
-            return false;
-        }
-    }
-
-    auto shards = getShardPaths(table_name);
-    for (const auto& shard : shards) {
-        string tmp_file = shard + ".tmp";
-        ifstream in_file(shard);
-        ofstream out_file(tmp_file);
-
-        string line;
-        while (getline(in_file, line)) {
-            vector<string> record;
-            istringstream ss(line);
-            string field;
-            while (getline(ss, field, ',')) {
-                record.push_back(field);
-            }
-
-            bool match = true;
-            for (const auto& [attr, value] : attrMap) {
-                if (record[metadata[attr]] != value) {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (!match) {
-                out_file << line << "\n";
-            }
-        }
-
-        in_file.close();
-        out_file.close();
-
-        fs::rename(tmp_file, shard);
-    }
-
-    return true;
+    Table table = Table(table_name);
+    bool success = table.deleteByAttributes(attrMap);
+    return success;
 }
 
 bool DBManager::deleteTable(const string& table_name) {
