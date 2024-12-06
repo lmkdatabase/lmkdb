@@ -257,63 +257,60 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
     return true;
 };
 
-future<shared_ptr<Table>> Table::join(const Table& other,
-                                      const string& this_join_attr,
-                                      const string& other_join_attr) {
+shared_ptr<Table> Table::join(const Table& other, const string& this_join_attr,
+                              const string& other_join_attr) {
     if (!loadMetadata()) {
         throw runtime_error("Failed loading metadata before join");
     }
-    return async(
-        launch::async, [this, other, this_join_attr, other_join_attr]() {
-            vector<future<Shard::JoinResult>> join_futures;
-            vector<shared_ptr<Shard>> joined_shards;
 
-            join_futures.reserve(getShards().size());
-            for (const auto& shard : getShards()) {
-                join_futures.push_back(shard->joinShards(
-                    other.getShards(), this_join_attr, other_join_attr,
-                    getMetadata(), other.getMetadata()));
-            }
+    vector<future<Shard::JoinResult>> join_futures;
+    vector<shared_ptr<Shard>> joined_shards;
 
-            for (auto& future : join_futures) {
-                auto result = future.get();
-                if (!result.success) {
-                    throw runtime_error("Join failed: " + result.error_message);
-                }
-                joined_shards.push_back(result.result_shard);
-            }
+    join_futures.reserve(getShards().size());
+    for (const auto& shard : getShards()) {
+        join_futures.push_back(shard->joinShards(
+            other.getShards(), this_join_attr, other_join_attr, getMetadata(),
+            other.getMetadata()));
+    }
 
-            // Create new temporary table for result and write metadata for the
-            // table
-            string result_table_name = name_ + "_join_" + other.getName();
-            fs::path temp_dir = fs::temp_directory_path() / result_table_name;
-            fs::create_directories(temp_dir);
+    for (auto& future : join_futures) {
+        auto result = future.get();
+        if (!result.success) {
+            throw runtime_error("Join failed: " + result.error_message);
+        }
+        joined_shards.push_back(result.result_shard);
+    }
 
-            auto result_table = make_shared<Table>(
-                result_table_name, fs::temp_directory_path(), true);
+    // Create new temporary table for result and write metadata for the
+    // table
+    string result_table_name = name_ + "_join_" + other.getName();
+    fs::path temp_dir = fs::temp_directory_path() / result_table_name;
+    fs::create_directories(temp_dir);
 
-            unordered_map<string, int> combined_metadata = getMetadata();
-            int offset = (int)getMetadata().size();
-            for (const auto& [key, value] : other.getMetadata()) {
-                if (key == other_join_attr) {
-                    combined_metadata[key] = getMetadata().at(this_join_attr);
-                } else {
-                    combined_metadata[key] = value + offset;
-                }
-            }
+    auto result_table =
+        make_shared<Table>(result_table_name, fs::temp_directory_path(), true);
 
-            ofstream metadata_file(temp_dir / "metadata.txt");
-            for (const auto& [attr, index] : combined_metadata) {
-                metadata_file << attr << "," << index << "\n";
-            }
-            metadata_file.close();
+    unordered_map<string, int> combined_metadata = getMetadata();
+    int offset = (int)getMetadata().size();
+    for (const auto& [key, value] : other.getMetadata()) {
+        if (key == other_join_attr) {
+            combined_metadata[key] = getMetadata().at(this_join_attr);
+        } else {
+            combined_metadata[key] = value + offset;
+        }
+    }
 
-            result_table->setMetadata(combined_metadata);
-            result_table->shards_ = joined_shards;
+    ofstream metadata_file(temp_dir / "metadata.txt");
+    for (const auto& [attr, index] : combined_metadata) {
+        metadata_file << attr << "," << index << "\n";
+    }
+    metadata_file.close();
 
-            return result_table;
-        });
-}
+    result_table->setMetadata(combined_metadata);
+    result_table->shards_ = joined_shards;
+
+    return result_table;
+};
 
 struct IndexCriteria {
     size_t target_index;

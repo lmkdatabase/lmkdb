@@ -133,10 +133,8 @@ bool DBManager::joinTables(const vector<string>& tables,
         for (size_t i = 1; i < tables.size(); ++i) {
             auto next_table = make_shared<Table>(tables[i]);
 
-            auto result_future = current_table->join(
-                *next_table, join_attr, attrMap[next_table->getName()]);
-
-            current_table = result_future.get();
+            current_table = current_table->join(*next_table, join_attr,
+                                                attrMap[next_table->getName()]);
         }
 
         current_table->read({});

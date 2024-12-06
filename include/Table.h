@@ -49,9 +49,9 @@ class Table {
     bool deleteByAttributes(
         const std::unordered_map<std::string, std::string>& attr_values);
 
-    std::future<std::shared_ptr<Table>> join(
-        const Table& other, const std::string& this_join_attr,
-        const std::string& other_join_attr);
+    std::shared_ptr<Table> join(const Table& other,
+                                const std::string& this_join_attr,
+                                const std::string& other_join_attr);
     void read(const std::vector<int>& lines);
     bool insert(
         const std::unordered_map<std::string, std::string>& updated_record);
