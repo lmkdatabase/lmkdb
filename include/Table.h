@@ -18,7 +18,7 @@ class Table {
 
     const size_t MAX_SHARD_SIZE = 1024 * 1024 * 1024;  // 1GB
 
-    void loadMetadata();
+    bool loadMetadata();
     void loadShards();
 
     bool validateAttributes(

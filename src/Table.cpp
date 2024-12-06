@@ -44,17 +44,17 @@ void Table::loadShards() {
     shards_ = shards;
 }
 
-void Table::loadMetadata() {
+bool Table::loadMetadata() {
     string metadata_path = tablePath() + "/metadata.txt";
 
     if (!fs::exists(metadata_path)) {
-        throw runtime_error("Metadata file not found for table: " + name_);
+        return false;
     }
 
     ifstream metadata_file(metadata_path);
 
     if (!metadata_file.is_open()) {
-        throw runtime_error("Failed to open metadata file: " + name_);
+        return false;
     }
 
     unordered_map<string, int> attributes_map{};
@@ -76,6 +76,7 @@ void Table::loadMetadata() {
     }
 
     metadata_ = attributes_map;
+    return true;
 }
 
 const vector<shared_ptr<Shard>>& Table::getShards() const {
@@ -126,7 +127,7 @@ RecordLocation Table::findRecord(size_t target_idx) const {
 }
 
 bool Table::insert(const unordered_map<string, string>& updated_record) {
-    loadMetadata();
+    if (!loadMetadata()) return false;
     auto shards = getShards();
 
     if (shards.empty() ||
@@ -169,7 +170,7 @@ bool Table::insert(const unordered_map<string, string>& updated_record) {
 }
 
 void Table::read(const vector<int>& lines) {
-    loadMetadata();
+    if (!loadMetadata()) return;
 
     int index = 0;
 
@@ -203,7 +204,7 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
         return false;
     }
 
-    loadMetadata();
+    if (!loadMetadata()) return false;
 
     // Find which shard contains our record
     auto location = findRecord(id);
@@ -260,7 +261,9 @@ bool Table::update(size_t id, const unordered_map<string, string>& updates) {
 future<shared_ptr<Table>> Table::join(const Table& other,
                                       const string& this_join_attr,
                                       const string& other_join_attr) {
-    loadMetadata();
+    if (!loadMetadata()) {
+        throw runtime_error("Failed loading metadata before join");
+    }
     return async(
         launch::async, [this, other, this_join_attr, other_join_attr]() {
             vector<future<Shard::JoinResult>> join_futures;
