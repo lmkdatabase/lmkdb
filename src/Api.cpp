@@ -14,9 +14,9 @@ bool DatabaseAPI::validateInteger(const string &input) {
     try {
         stoi(input);
         return true;
-    } catch (const std::invalid_argument &) {
+    } catch (const invalid_argument &) {
         return false;
-    } catch (const std::out_of_range &) {
+    } catch (const out_of_range &) {
         return false;
     }
 }

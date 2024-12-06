@@ -9,7 +9,7 @@
 
 using namespace std;
 
-string bold(const std::string& text) {
+string bold(const string& text) {
     return BOLD + text + RESET;
 }
 

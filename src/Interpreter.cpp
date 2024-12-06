@@ -41,7 +41,7 @@ void Interpreter::processCommand(const string &command) {
     }
 
     transform(tokens[0].begin(), tokens[0].end(), tokens[0].begin(),
-              [](unsigned char c) { return std::tolower(c); });
+              [](unsigned char c) { return tolower(c); });
 
     string operation = tokens[0];
 

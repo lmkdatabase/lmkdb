@@ -39,8 +39,8 @@ shared_ptr<Table> DBManager::findTable(const string& table_name) {
     return nullptr;
 }
 
-bool DBManager::createTable(const std::string& table_name,
-                            const std::vector<std::string>& attributes) {
+bool DBManager::createTable(const string& table_name,
+                            const vector<string>& attributes) {
     if (tables.find(table_name) != tables.end()) {
         cerr << "Table already exists: " << table_name << endl;
         return false;
