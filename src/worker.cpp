@@ -27,67 +27,53 @@ unordered_multimap<string, vector<string>> JoinWorker::buildHashTable(
     return table;
 }
 
-bool JoinWorker::processShardBatch(const vector<string>& shard_batch_A,
+bool JoinWorker::processShardBatch(const string& shard_A,
                                    const vector<string>& all_shards_B,
                                    int attr_pos_A, int attr_pos_B) {
-    for (const auto& shard_A : shard_batch_A) {
-        ifstream check_file(shard_A);
-        if (!check_file.good()) {
-            cerr << "Error: Cannot open shard file: " << shard_A << endl;
-            continue;
+    unordered_multimap<string, pair<string, streampos>> index;
+
+    ifstream file_A(shard_A);
+    string line;
+    streampos pos = 0;
+
+    while (getline(file_A, line)) {
+        vector<string> record;
+        istringstream ss(line);
+        string field;
+        int current_pos = 0;
+
+        while (getline(ss, field, ',')) {
+            if (current_pos == attr_pos_A) {
+                index.insert({field, {shard_A, pos}});
+                break;
+            }
+            current_pos++;
         }
+        pos = file_A.tellg();
+    }
 
-        // Build hash table for this shard of A
-        auto hash_table = buildHashTable(shard_A, attr_pos_A);
+    for (const auto& shard_B : all_shards_B) {
+        ifstream file_B(shard_B);
+        while (getline(file_B, line)) {
+            vector<string> record_B;
+            istringstream ss(line);
+            string join_key;
 
-        // Stream through all shards of B
-        for (const auto& shard_B : all_shards_B) {
-            ifstream file_B(shard_B);
-            if (!file_B.good()) {
-                cerr << "Error: Cannot open shard file: " << shard_B << endl;
-                continue;
+            for (int i = 0; i <= attr_pos_B; i++) {
+                getline(ss, join_key, ',');
             }
 
-            string line;
-            while (getline(file_B, line)) {
-                vector<string> record_B;
-                istringstream ss(line);
-                string field;
-                while (getline(ss, field, ',')) {
-                    record_B.push_back(field);
-                }
+            auto range = index.equal_range(join_key);
+            for (auto it = range.first; it != range.second; ++it) {
+                ifstream reader(it->second.first);
+                reader.seekg(it->second.second);
 
-                if ((int)record_B.size() <= attr_pos_B) {
-                    cerr << "Error: Invalid record structure in shard B"
-                         << endl;
-                    continue;
-                }
+                string matching_record;
+                getline(reader, matching_record);
 
-                auto range = hash_table.equal_range(record_B[attr_pos_B]);
-                for (auto it = range.first; it != range.second; ++it) {
-                    lock_guard<mutex> lock(output_mutex);
-                    ofstream out(output_path, ios::app);
-                    if (!out.good()) {
-                        cerr
-                            << "Error: Cannot open output file: " << output_path
-                            << endl;
-                        continue;
-                    }
-
-                    const auto& record_A = it->second;
-                    string output_line;
-
-                    for (size_t i = 0; i < record_A.size(); ++i) {
-                        if (i > 0) output_line += ",";
-                        output_line += record_A[i];
-                    }
-
-                    for (const auto& field : record_B) {
-                        output_line += "," + field;
-                    }
-
-                    out << output_line << "\n";
-                }
+                lock_guard<mutex> lock(output_mutex);
+                ofstream out(output_path, ios::app);
+                out << matching_record << "," << line << "\n";
             }
         }
     }
