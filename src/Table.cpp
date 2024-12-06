@@ -93,6 +93,24 @@ const unordered_map<string, int>& Table::getMetadata() const {
     return metadata_;
 }
 
+RecordLocation Table::findRecord(size_t target_idx) const {
+    size_t current_index = 0;
+
+    for (const auto& shard : getShards()) {
+        // Count records in this shard
+        ifstream file(shard->path());
+        size_t shard_records = count(istreambuf_iterator<char>(file),
+                                     istreambuf_iterator<char>(), '\n');
+
+        // Check if our target record is in this shard
+        if (current_index + shard_records > target_idx) {
+            return {.shard = shard, .record_index = target_idx - current_index};
+        }
+        current_index += shard_records;
+    }
+    return {.shard = nullptr, .record_index = 0};
+}
+
 bool Table::insert(const unordered_map<string, string>& updated_record) {
     auto shards = getShards();
 
@@ -162,6 +180,68 @@ void Table::read(const vector<int>& lines) {
         }
     }
 }
+
+bool Table::update(size_t id, const unordered_map<string, string>& updates) {
+    // First validate all attributes exist in our metadata
+    const auto& metadata = getMetadata();
+    for (const auto& [attr, _] : updates) {
+        if (metadata.find(attr) == metadata.end()) {
+            cerr << "Invalid attribute for table " << getName() << ": " << attr
+                 << endl;
+            return false;
+        }
+    }
+
+    // Find which shard contains our record
+    auto location = findRecord(id);
+    if (!location.shard) {
+        cerr << "Record " << id << " not found in table " << getName() << endl;
+        return false;
+    }
+
+    // Create temporary file for the update
+    fs::path temp_path = location.shard->path() + ".tmp";
+    ifstream in_file(location.shard->path());
+    ofstream out_file(temp_path);
+
+    string line;
+    size_t current_index = 0;
+
+    // Process the shard line by line
+    while (getline(in_file, line)) {
+        if (current_index != location.record_index) {
+            out_file << line << "\n";
+        } else {
+            vector<string> record;
+            istringstream ss(line);
+            string field;
+
+            while (getline(ss, field, ',')) {
+                record.push_back(field);
+            }
+
+            for (const auto& [attr, value] : updates) {
+                record[metadata.at(attr)] = value;
+            }
+
+            // Write updated record
+            bool first = true;
+            for (const auto& field : record) {
+                if (!first) out_file << ",";
+                out_file << field;
+                first = false;
+            }
+            out_file << "\n";
+        }
+        current_index++;
+    }
+
+    in_file.close();
+    out_file.close();
+
+    fs::rename(temp_path, location.shard->path());
+    return true;
+};
 
 future<shared_ptr<Table>> Table::join(const Table& other,
                                       const string& this_join_attr,

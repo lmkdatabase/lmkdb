@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
-#include <ios>
 #include <iostream>
 #include <iterator>
 #include <sstream>
@@ -147,68 +146,12 @@ ShardLocation DBManager::findShardForUpdate(const string& table_name,
     return {.shard_path = "", .record_index = 0};
 }
 
-bool DBManager::updateShardRecord(
-    const string& table_name, const string& shard_path, size_t target_idx,
-    const unordered_map<string, string>& updates) {
-    auto metadata = getMetadata(table_name);
-
-    for (const auto& [attr, _] : updates) {
-        if (metadata.find(attr) == metadata.end()) {
-            cerr << "Invalid attribute: " << attr << endl;
-            return false;
-        }
-    }
-
-    string tmp_file = shard_path + ".tmp";
-
-    ifstream in_file(shard_path);
-    ofstream out_file(tmp_file);
-
-    string line;
-    size_t curr_idx = 0;
-
-    while (getline(in_file, line)) {
-        if (curr_idx != target_idx) {
-            out_file << line << "\n";
-        } else {
-            vector<string> record{};
-
-            istringstream ss(line);
-            string field;
-
-            while (getline(ss, field, ',')) {
-                record.push_back(field);
-            }
-
-            for (const auto& [attr, value] : updates) {
-                record[metadata.at(attr)] = value;
-            }
-
-            bool first = true;
-            for (const auto& field : record) {
-                if (!first) out_file << ",";
-                out_file << field;
-                first = false;
-            }
-            out_file << "\n";
-        }
-        curr_idx++;
-    }
-
-    fs::rename(tmp_file, shard_path);
-    return true;
-}
-
 bool DBManager::updateRecord(const string& table_name, size_t id,
                              const unordered_map<string, string>& attrMap) {
-    auto location = findShardForUpdate(table_name, id);
+    Table table = Table(table_name);
 
-    if (location.shard_path.empty()) {
-        return false;
-    }
-
-    return updateShardRecord(table_name, location.shard_path,
-                             location.record_index, attrMap);
+    bool success = table.update(id, attrMap);
+    return success;
 }
 
 bool DBManager::deleteByIndex(const string& table_name, size_t id) {

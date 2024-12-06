@@ -3,6 +3,11 @@
 #include <unordered_map>
 #include "Shard.h"
 
+struct RecordLocation {
+    std::shared_ptr<Shard> shard;
+    size_t record_index;
+};
+
 class Table {
    private:
     std::string name_;
@@ -29,11 +34,14 @@ class Table {
     const std::vector<std::shared_ptr<Shard>>& getShards() const;
     void setMetadata(const std::unordered_map<std::string, int>& metadata);
 
+    RecordLocation findRecord(size_t target_idx) const;
+
     std::future<std::shared_ptr<Table>> join(
         const Table& other, const std::string& this_join_attr,
         const std::string& other_join_attr);
-
     void read(const std::vector<int>& lines);
     bool insert(
         const std::unordered_map<std::string, std::string>& updated_record);
+    bool update(size_t id,
+                const std::unordered_map<std::string, std::string>& updates);
 };
