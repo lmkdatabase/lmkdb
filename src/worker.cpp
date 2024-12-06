@@ -37,7 +37,6 @@ bool JoinWorker::processShardBatch(const string& shard_A,
     streampos pos = 0;
 
     while (getline(file_A, line)) {
-        vector<string> record;
         istringstream ss(line);
         string field;
         int current_pos = 0;
@@ -55,7 +54,6 @@ bool JoinWorker::processShardBatch(const string& shard_A,
     for (const auto& shard_B : all_shards_B) {
         ifstream file_B(shard_B);
         while (getline(file_B, line)) {
-            vector<string> record_B;
             istringstream ss(line);
             string join_key;
 
