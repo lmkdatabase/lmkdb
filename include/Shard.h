@@ -27,7 +27,6 @@ class Shard {
     explicit Shard();
     std::string path() const;
 
-    // Move semantics
     Shard(Shard&& other) noexcept = default;
     Shard& operator=(Shard&& other) noexcept = default;
 
