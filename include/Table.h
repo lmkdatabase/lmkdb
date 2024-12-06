@@ -1,10 +1,9 @@
 #ifndef TABLE_H
 #define TABLE_H
 
-#include <future>
 #include <memory>
 #include <unordered_map>
-#include "Shard.h"
+#include "Shard.hpp"
 
 struct RecordLocation {
     std::shared_ptr<Shard> shard;
