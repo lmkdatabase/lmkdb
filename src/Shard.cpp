@@ -62,6 +62,7 @@ future<Shard::JoinResult> Shard::joinShards(
             bool success = worker.processShardBatch(
                 this->path(), other_paths, this_metadata.at(this_join_attr),
                 other_metadata.at(other_join_attr));
+
             result.success = success;
             result.result_shard = success ? result_shard : nullptr;
             result.error_message = success ? "" : "Failed to join shards";
