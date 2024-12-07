@@ -14,6 +14,7 @@
 #include "thrust/host_vector.h"
 
 using namespace std;
+using namespace chrono;
 
 __host__ vector<string> split(const string& str, char delimiter) {
     vector<string> tokens;
@@ -29,9 +30,9 @@ __host__ vector<string> split(const string& str, char delimiter) {
 }
 
 __host__ void loadCsv(const string& filename, int joinIdx,
-             vector<string>& rows, vector<int>& column,
-             unordered_map<string, int>& strToIntMap,
-             unordered_map<int, string>& intToStrMap) {
+                      vector<string>& rows, vector<int>& column,
+                      unordered_map<string, int>& strToIntMap,
+                      unordered_map<int, string>& intToStrMap) {
     ifstream file(filename);
     if (!file.is_open()) {
         cerr << "Error: Could not open file " << filename << "\n";
@@ -42,6 +43,7 @@ __host__ void loadCsv(const string& filename, int joinIdx,
     int currentIndex = 0;
     int line_count = 0;
 
+    auto start_time = high_resolution_clock::now();
     while (getline(file, line)) {
         line_count++;
         rows.push_back(line);
@@ -62,42 +64,55 @@ __host__ void loadCsv(const string& filename, int joinIdx,
             colIndex++;
         }
     }
+    auto end_time = high_resolution_clock::now();
+
+    cout << "CSV " << filename << " loaded in "
+         << duration_cast<milliseconds>(end_time - start_time).count() << " ms.\n";
 
     file.close();
 }
 
-
-__global__ void joinWithIndices(const int* const left, const int* const right, int leftSize, int rightSize, int* matches) {
+__global__ void joinValue(const int left, const int* const right, int rightSize, int* const matches, int leftIdx) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (idx < leftSize) {
-        for (int j = 0; j < rightSize; ++j) {
-            if (left[idx] == right[j]) {
-                matches[idx] = j; 
-                return; 
-            }
+    if (idx < rightSize) {
+        if (left == right[idx]) {
+            matches[leftIdx] = idx; 
         }
-        matches[idx] = -1;
     }
 }
 
+__global__ void join(const int* const left, const int* const right, int leftSize, int rightSize,
+                     int childBlocks, int childThreadsPerBlock, int* const matches) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < leftSize) {
+        matches[idx] = -1;
+        joinValue<<<childBlocks, childThreadsPerBlock>>>(left[idx], right, rightSize, matches, idx);
+    }
+}
+
+
 unique_ptr<thrust::host_vector<int>> gpuJoin(const thrust::device_vector<int>& left,
-                                            const thrust::device_vector<int>& right) {
+                                             const thrust::device_vector<int>& right) {
     int leftSize = left.size();
+    int rightSize = right.size();
     thrust::device_vector<int> matches(leftSize, -1);
 
     int threadCount = 1024;
-    int nBlocks = (leftSize + threadCount - 1) / threadCount;
+    int parentBlocks = (leftSize + threadCount - 1) / threadCount;
+    int childBlocks = (rightSize + threadCount - 1) / threadCount;
 
-    joinWithIndices<<<nBlocks, threadCount>>>(thrust::raw_pointer_cast(left.data()),
-                                              thrust::raw_pointer_cast(right.data()),
-                                              leftSize, right.size(),
-                                              thrust::raw_pointer_cast(matches.data()));
-
+    
+    join<<<parentBlocks, threadCount>>>(thrust::raw_pointer_cast(left.data()),
+                                        thrust::raw_pointer_cast(right.data()),
+                                        leftSize, rightSize,
+                                        childBlocks, threadCount,
+                                        thrust::raw_pointer_cast(matches.data()));
     cudaDeviceSynchronize();
 
     return make_unique<thrust::host_vector<int>>(matches);
 }
+
 
 __host__ vector<string> getShardPaths(const string& shardDir) {
     vector<string> shardPaths;
@@ -107,9 +122,9 @@ __host__ vector<string> getShardPaths(const string& shardDir) {
     return shardPaths;
 }
 
-int main() {    
-    vector<string> leftShards = getShardPaths("/content/drive/My Drive/lmkdb/london2");
-    vector<string> rightShards = getShardPaths("/content/drive/My Drive/lmkdb/stations2");
+int main() {
+    vector<string> leftShards = getShardPaths("/content/drive/My Drive/lmkdb/london");
+    vector<string> rightShards = getShardPaths("/content/drive/My Drive/lmkdb/stations");
 
     ofstream outputFile("joined_table.csv");
     if (!outputFile.is_open()) {
@@ -121,7 +136,7 @@ int main() {
         for (const auto& rightShard : rightShards) {
             vector<string> leftRows, rightRows;
             vector<int> leftColumn, rightColumn;
-            
+
             unordered_map<string, int> strToIntMap;
             unordered_map<int, string> intToStrMap;
 
@@ -145,3 +160,6 @@ int main() {
     outputFile.close();
     return 0;
 }
+
+
+
