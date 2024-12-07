@@ -21,4 +21,4 @@ jobs:
 
       - name: format
         run: |
-          find src -name '*.cpp' -o -name '*.h' | xargs clang-format --dry-run --Werror
+          find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-run --Werror
