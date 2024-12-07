@@ -23,7 +23,7 @@ include_directories(${INCLUDE_PATHS})
 
 # Source and header files
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
-file(GLOB_RECURSE HEADER_FILES include/*.h)
+file(GLOB_RECURSE HEADER_FILES include/*.hpp)
 set(SOURCE_NON_MAIN ${SOURCE_FILES})
 list(FILTER SOURCE_NON_MAIN EXCLUDE REGEX "src/main.cpp$")
 
